@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AutoAssignAccountType;
 use App\Models\Traits\AutoAssignSessionYear;
+use App\Models\Traits\HasAccountType;
 use App\Models\Traits\HasSessionYear;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CashbookEntry extends Model
 {
-    use HasFactory, HasSessionYear, AutoAssignSessionYear;
+    use HasFactory, HasSessionYear, AutoAssignSessionYear, HasAccountType, AutoAssignAccountType;
 
     protected $fillable = [
         'cashbook_id',
@@ -25,6 +27,8 @@ class CashbookEntry extends Model
         'tax_for',
         'tax_remark',
         'receipt_payment_entry_id',
+        'session_year_id',
+        'account_type_id',
     ];
 
     protected $casts = [

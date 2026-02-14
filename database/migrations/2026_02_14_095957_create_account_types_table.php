@@ -11,40 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Create session_years table
-        Schema::create('session_years', function (Blueprint $table) {
+        Schema::create('account_types', function (Blueprint $table) {
             $table->id();
-            $table->string('session_name');
+            $table->string('name');
             $table->string('slug');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->text('description');
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });
 
-        // 2. Tables that will use session_year_id
+
         $tables = [
             'ledgers',
+            'ledger_entries',
             'receipt_payment_accounts',
-            'beneficiaries',
             'receipt_payment_entries',
             'cashbooks',
-            'ledger_entries',
             'cashbook_entries',
-            'funds',
-            'students',
-            'staff',
-            'items',
-            'stocks',
-            'stock_ledgers',
         ];
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) {
-                $table->foreignId('session_year_id')
-                      ->constrained('session_years')
-                      ->cascadeOnUpdate()
-                      ->restrictOnDelete();
+                $table->foreignId('account_type_id')
+                    ->constrained('account_types')
+                    ->cascadeOnUpdate()
+                    ->restrictOnDelete();
             });
         }
     }
@@ -56,27 +47,20 @@ return new class extends Migration
     {
         $tables = [
             'ledgers',
+            'ledger_entries',
             'receipt_payment_accounts',
-            'beneficiaries',
             'receipt_payment_entries',
             'cashbooks',
-            'ledger_entries',
             'cashbook_entries',
-            'funds',
-            'students',
-            'staff',
-            'items',
-            'stocks',
-            'stock_ledgers',
         ];
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) {
-                $table->dropForeign(['session_year_id']);
-                $table->dropColumn('session_year_id');
+                $table->dropForeign(['account_type_id']);
+                $table->dropColumn('account_type_id');
             });
         }
 
-        Schema::dropIfExists('session_years');
+        Schema::dropIfExists('account_types');
     }
 };

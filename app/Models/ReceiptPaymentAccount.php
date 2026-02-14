@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AutoAssignAccountType;
 use App\Models\Traits\AutoAssignSessionYear;
+use App\Models\Traits\HasAccountType;
 use App\Models\Traits\HasSessionYear;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ReceiptPaymentAccount extends Model
 {
-    use HasFactory, HasSessionYear, AutoAssignSessionYear;
+    use HasFactory, HasSessionYear, AutoAssignSessionYear, HasAccountType, AutoAssignAccountType;
 
     protected $fillable = [
         'name',
@@ -19,6 +21,8 @@ class ReceiptPaymentAccount extends Model
         'period_to',
         'date',
         'description',
+        'session_year_id',
+        'account_type_id',
     ];
 
     protected $casts = [

@@ -36,15 +36,17 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
+        $session_filter = $request->get('session_id', 1);
+
         $month = $request->input('month');
         $dateFromRaw = $request->input('date_from');
         $dateToRaw = $request->input('date_to');
         $articleId = $request->input('article_id');
-        
+
         // Validate and normalize date inputs - only accept dd-mm-yyyy or dd/mm/yyyy
         $dateFrom = $this->normalizeDateInput($dateFromRaw);
         $dateTo = $this->normalizeDateInput($dateToRaw);
-        
+
         // Derive year from month or date filters if needed
         $year = date('Y');
         if ($dateFrom) {
@@ -62,19 +64,19 @@ class ReportController extends Controller
             $detectedYear = $this->detectYearForMonth($monthNum);
             $year = $detectedYear ?: date('Y');
         }
-        
+
         // Get all articles for dropdown
         $articles = Article::orderBy('name')->get();
-        
+
         // Tax Totals (P Tax and TDS)
-        $taxTotals = $this->getTaxTotals($year, $month, $dateFrom, $dateTo);
-        
+        $taxTotals = $this->getTaxTotals($year, $month, $dateFrom, $dateTo, $session_filter);
+
         // Payment Totals by Article
         $paymentTotals = $this->getPaymentTotals($articleId, $year, $month, $dateFrom, $dateTo);
-        
+
         return view('report', compact('month', 'dateFrom', 'dateTo', 'articleId', 'articles', 'taxTotals', 'paymentTotals', 'year'));
     }
-    
+
     /**
      * Detect the most recent year that has data for a given month
      */
@@ -84,11 +86,11 @@ class ReportController extends Controller
         $entries = ReceiptPaymentEntry::whereNotNull('date')
             ->whereRaw("MONTH(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$month])
             ->get();
-        
+
         if ($entries->isEmpty()) {
             return null;
         }
-        
+
         $years = [];
         foreach ($entries as $entry) {
             try {
@@ -99,37 +101,39 @@ class ReportController extends Controller
                 continue;
             }
         }
-        
+
         if (empty($years)) {
             return null;
         }
-        
+
         // Return the most recent year
         return max($years);
     }
-    
+
     /**
      * Get tax totals (P Tax and TDS) with date/month filters
      */
-    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null)
+    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
     {
+
         $query = ReceiptPaymentEntry::where('type', 'payment')
+            ->where('session_year_id', $session_filter)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for');
-        
+
         // Apply date filters
         $this->applyDateFilters($query, $year, $month, $dateFrom, $dateTo);
-        
+
         $entries = $query->get();
-        
+
         $totalPTax = 0;
         $totalTDS = 0;
-        
+
         foreach ($entries as $entry) {
             // Use date column if available, otherwise extract from remarks or use created_at
             $entryDate = $this->getEntryDate($entry);
-            
+
             // Apply date filters to entry date
             if ($this->matchesDateFilters($entryDate, $year, $month, $dateFrom, $dateTo)) {
                 if ($entry->tax_for === 'pTax') {
@@ -139,41 +143,42 @@ class ReportController extends Controller
                 }
             }
         }
-        
+
         return [
             'pTax' => $totalPTax,
             'tds' => $totalTDS,
             'total' => $totalPTax + $totalTDS,
         ];
     }
-    
+
     /**
      * Get payment totals by article with date/month filters
      */
-    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null)
+    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
     {
         $query = ReceiptPaymentEntry::with('article')
+            ->where('session_year_id', $session_filter)
             ->where('type', 'payment');
-        
+
         if ($articleId) {
             $query->where('article_id', $articleId);
         }
-        
+
         // Apply date filters
         $this->applyDateFilters($query, $year, $month, $dateFrom, $dateTo);
-        
+
         $entries = $query->get();
-        
+
         $totals = [];
-        
+
         foreach ($entries as $entry) {
             // Use date column if available, otherwise extract from remarks or use created_at
             $entryDate = $this->getEntryDate($entry);
-            
+
             // Apply date filters to entry date
             if ($this->matchesDateFilters($entryDate, $year, $month, $dateFrom, $dateTo) && $entry->article_id) {
                 $entryArticleId = $entry->article_id;
-                
+
                 if (!isset($totals[$entryArticleId])) {
                     $article = $entry->article;
                     $totals[$entryArticleId] = [
@@ -184,20 +189,20 @@ class ReportController extends Controller
                         'count' => 0,
                     ];
                 }
-                
+
                 $totals[$entryArticleId]['total_amount'] += $entry->amount;
                 $totals[$entryArticleId]['count']++;
             }
         }
-        
+
         // Sort by total amount descending
-        usort($totals, function($a, $b) {
+        usort($totals, function ($a, $b) {
             return $b['total_amount'] <=> $a['total_amount'];
         });
-        
+
         return $totals;
     }
-    
+
     /**
      * Get entry date from date column, remarks, or created_at
      */
@@ -217,44 +222,46 @@ class ReportController extends Controller
                 // If parsing fails, continue to next method
             }
         }
-        
+
         // Fallback to extracting from remarks
         $ppaDate = $this->extractPpaDate($entry->remarks);
         if ($ppaDate) {
             return $ppaDate;
         }
-        
+
         // Final fallback to created_at
         return $entry->created_at;
     }
-    
+
     /**
      * Apply date filters to query (preliminary filter for performance)
      */
-    private function applyDateFilters($query, $year, $month = null, $dateFrom = null, $dateTo = null)
+    private function applyDateFilters($query, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
     {
         // If specific date range is provided, use it (takes priority)
         if ($dateFrom && $dateTo) {
             // Normalize date formats - accept both dd-mm-yyyy and dd/mm/yyyy
             $dateFrom = str_replace('/', '-', $dateFrom);
             $dateTo = str_replace('/', '-', $dateTo);
-            
+
             // Parse dd-mm-yyyy format
             try {
                 $fromDate = Carbon::createFromFormat('d-m-Y', $dateFrom);
                 $toDate = Carbon::createFromFormat('d-m-Y', $dateTo);
-                
+
                 // Filter by date column (dd/mm/yyyy) or created_at
-                $query->where(function($q) use ($fromDate, $toDate) {
-                    $q->where(function($subQ) use ($fromDate, $toDate) {
+                $query->where(function ($q) use ($fromDate, $toDate) {
+                    $q->where(function ($subQ) use ($fromDate, $toDate) {
                         // Match date column (dd/mm/yyyy format)
                         $subQ->whereNotNull('date')
-                             ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) >= DATE(?)", [$fromDate->format('Y-m-d')])
-                             ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) <= DATE(?)", [$toDate->format('Y-m-d')]);
-                    })->orWhere(function($subQ) use ($fromDate, $toDate) {
+                            ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) >= DATE(?)", [$fromDate->format('Y-m-d')])
+                            ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) <= DATE(?)", [$toDate->format('Y-m-d')])
+                        ;
+                    })->orWhere(function ($subQ) use ($fromDate, $toDate) {
                         // Fallback to created_at if date column is null
                         $subQ->whereNull('date')
-                             ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()]);
+                            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()])
+                        ;
                     });
                 });
             } catch (\Exception $e) {
@@ -266,17 +273,17 @@ class ReportController extends Controller
             try {
                 $fromDate = Carbon::createFromFormat('d-m-Y', $dateFrom);
                 $toDate = $fromDate->copy()->endOfDay();
-                
+
                 // Filter by date column (dd/mm/yyyy) or created_at
-                $query->where(function($q) use ($fromDate, $toDate) {
-                    $q->where(function($subQ) use ($fromDate, $toDate) {
+                $query->where(function ($q) use ($fromDate, $toDate) {
+                    $q->where(function ($subQ) use ($fromDate, $toDate) {
                         // Match date column (dd/mm/yyyy format) - exact date match
                         $subQ->whereNotNull('date')
-                             ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) = DATE(?)", [$fromDate->format('Y-m-d')]);
-                    })->orWhere(function($subQ) use ($fromDate, $toDate) {
+                            ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) = DATE(?)", [$fromDate->format('Y-m-d')]);
+                    })->orWhere(function ($subQ) use ($fromDate, $toDate) {
                         // Fallback to created_at if date column is null
                         $subQ->whereNull('date')
-                             ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate]);
+                            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate]);
                     });
                 });
             } catch (\Exception $e) {
@@ -288,17 +295,17 @@ class ReportController extends Controller
                 $monthNum = (int) $month;
                 $startDate = Carbon::create($year, $monthNum, 1)->startOfDay();
                 $endDate = Carbon::create($year, $monthNum, 1)->endOfMonth()->endOfDay();
-                
-                $query->where(function($q) use ($startDate, $endDate, $monthNum, $year) {
-                    $q->where(function($subQ) use ($monthNum, $year) {
+
+                $query->where(function ($q) use ($startDate, $endDate, $monthNum, $year) {
+                    $q->where(function ($subQ) use ($monthNum, $year) {
                         // Match date column (dd/mm/yyyy format) for the month
                         $subQ->whereNotNull('date')
-                             ->whereRaw("MONTH(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$monthNum])
-                             ->whereRaw("YEAR(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$year]);
-                    })->orWhere(function($subQ) use ($startDate, $endDate) {
+                            ->whereRaw("MONTH(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$monthNum])
+                            ->whereRaw("YEAR(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$year]);
+                    })->orWhere(function ($subQ) use ($startDate, $endDate) {
                         // Fallback to created_at if date column is null
                         $subQ->whereNull('date')
-                             ->whereBetween('created_at', [$startDate, $endDate]);
+                            ->whereBetween('created_at', [$startDate, $endDate]);
                     });
                 });
             } catch (\Exception $e) {
@@ -307,7 +314,7 @@ class ReportController extends Controller
         }
         // If no filters provided, show all data (no year filter applied)
     }
-    
+
     /**
      * Check if entry date matches the filters
      */
@@ -317,9 +324,9 @@ class ReportController extends Controller
             try {
                 // Normalize date formats
                 $dateFrom = str_replace('/', '-', $dateFrom);
-                
+
                 $fromDate = Carbon::createFromFormat('d-m-Y', $dateFrom);
-                
+
                 if ($dateTo) {
                     // Date range filter
                     $dateTo = str_replace('/', '-', $dateTo);
@@ -339,7 +346,7 @@ class ReportController extends Controller
             return true;
         }
     }
-    
+
     /**
      * Extract PPA Date from remarks
      * Format: "PPA Date: 03/08/2025" or "PPA Date: 03-08-2025"
@@ -355,7 +362,7 @@ class ReportController extends Controller
             $day = (int) $matches[1];
             $month = (int) $matches[2];
             $year = (int) $matches[3];
-            
+
             try {
                 return Carbon::create($year, $month, $day);
             } catch (\Exception $e) {

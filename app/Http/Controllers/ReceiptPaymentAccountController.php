@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
+use App\Models\Beneficiary;
 use App\Models\Cashbook;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
@@ -11,9 +13,11 @@ use Illuminate\Http\Request;
 
 class ReceiptPaymentAccountController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $accounts = ReceiptPaymentAccount::orderByDesc('period_from')->paginate(15);
+        $session_filter = $request->get('session_id', 1);
+        $account_type = $request->get('account_type', 1);
+        $accounts = ReceiptPaymentAccount::where('session_year_id', $session_filter)->where('account_type_id', $account_type)->orderByDesc('period_from')->paginate(15);
 
         return view('receipt_payments.index', compact('accounts'));
     }
@@ -43,6 +47,7 @@ class ReceiptPaymentAccountController extends Controller
 
     public function show(ReceiptPaymentAccount $receipt_payment)
     {
+
         $entries = $receipt_payment->entries()
             ->with(['article', 'beneficiary'])
             ->orderByDesc('id')
@@ -74,33 +79,33 @@ class ReceiptPaymentAccountController extends Controller
 
         // Apply month filters if provided
         $filteredEntries = $entries;
-        
+
         if ($request->filled('filter_type')) {
             $filterType = $request->filter_type;
-            
+
             if ($filterType === 'single_month' && $request->filled('month')) {
                 // Single month filter: YYYY-MM format (e.g., 2025-04)
                 $selectedMonth = $request->month;
                 list($year, $month) = explode('-', $selectedMonth);
                 $year = (int)$year;
                 $month = (int)$month;
-                
-                $filteredEntries = $entries->filter(function($entry) use ($year, $month) {
+
+                $filteredEntries = $entries->filter(function ($entry) use ($year, $month) {
                     return $this->entryMatchesMonth($entry, $year, $month);
                 });
             } elseif ($filterType === 'month_range' && $request->filled('from_month') && $request->filled('to_month')) {
                 // Month range filter: From month to To month (both inclusive)
                 $fromMonth = $request->from_month;
                 $toMonth = $request->to_month;
-                
+
                 list($fromYear, $fromMonthNum) = explode('-', $fromMonth);
                 list($toYear, $toMonthNum) = explode('-', $toMonth);
                 $fromYear = (int)$fromYear;
                 $fromMonthNum = (int)$fromMonthNum;
                 $toYear = (int)$toYear;
                 $toMonthNum = (int)$toMonthNum;
-                
-                $filteredEntries = $entries->filter(function($entry) use ($fromYear, $fromMonthNum, $toYear, $toMonthNum) {
+
+                $filteredEntries = $entries->filter(function ($entry) use ($fromYear, $fromMonthNum, $toYear, $toMonthNum) {
                     return $this->entryMatchesMonthRange($entry, $fromYear, $fromMonthNum, $toYear, $toMonthNum);
                 });
             }
@@ -110,9 +115,9 @@ class ReceiptPaymentAccountController extends Controller
         $payments = $filteredEntries->where('type', 'payment');
 
         // Group receipts by component name and sum amounts
-        $groupedReceipts = $receipts->groupBy(function($entry) {
+        $groupedReceipts = $receipts->groupBy(function ($entry) {
             return $entry->current_particular_name;
-        })->map(function($group) {
+        })->map(function ($group) {
             $firstEntry = $group->first();
             return (object)[
                 'current_particular_name' => $firstEntry->current_particular_name,
@@ -122,9 +127,9 @@ class ReceiptPaymentAccountController extends Controller
         })->values()->sortBy('current_particular_name')->values();
 
         // Group payments by component name and sum amounts
-        $groupedPayments = $payments->groupBy(function($entry) {
+        $groupedPayments = $payments->groupBy(function ($entry) {
             return $entry->current_particular_name;
-        })->map(function($group) {
+        })->map(function ($group) {
             $firstEntry = $group->first();
             return (object)[
                 'current_particular_name' => $firstEntry->current_particular_name,
@@ -156,7 +161,7 @@ class ReceiptPaymentAccountController extends Controller
         if (!$entryDate) {
             return false;
         }
-        
+
         return $entryDate->year == $year && $entryDate->month == $month;
     }
 
@@ -169,15 +174,15 @@ class ReceiptPaymentAccountController extends Controller
         if (!$entryDate) {
             return false;
         }
-        
+
         $entryYear = $entryDate->year;
         $entryMonth = $entryDate->month;
-        
+
         // Convert to comparable format (YYYYMM)
         $entryValue = (int)($entryYear . str_pad($entryMonth, 2, '0', STR_PAD_LEFT));
         $fromValue = (int)($fromYear . str_pad($fromMonth, 2, '0', STR_PAD_LEFT));
         $toValue = (int)($toYear . str_pad($toMonth, 2, '0', STR_PAD_LEFT));
-        
+
         return $entryValue >= $fromValue && $entryValue <= $toValue;
     }
 
@@ -196,7 +201,7 @@ class ReceiptPaymentAccountController extends Controller
                 }
             }
         }
-        
+
         // Try to extract from remarks (PPA Date)
         if (!empty($entry->remarks)) {
             if (preg_match('/PPA\s+Date:\s*(\d{2})[\/\-](\d{2})[\/\-](\d{4})/i', $entry->remarks, $matches)) {
@@ -207,7 +212,7 @@ class ReceiptPaymentAccountController extends Controller
                 }
             }
         }
-        
+
         // Fallback to created_at
         return $entry->created_at;
     }

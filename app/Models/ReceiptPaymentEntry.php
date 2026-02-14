@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AutoAssignAccountType;
 use App\Models\Traits\AutoAssignSessionYear;
+use App\Models\Traits\HasAccountType;
 use App\Models\Traits\HasSessionYear;
 use App\Services\ReceiptPaymentSyncService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReceiptPaymentEntry extends Model
 {
-    use HasFactory, HasSessionYear, AutoAssignSessionYear;
+    use HasFactory, HasSessionYear, AutoAssignSessionYear, HasAccountType, AutoAssignAccountType;
 
     protected $fillable = [
         'receipt_payment_account_id',
@@ -27,6 +29,8 @@ class ReceiptPaymentEntry extends Model
         'tax_type',
         'tax_remark',
         'pair_id',
+        'session_year_id',
+        'account_type_id',
     ];
 
     protected static function booted()
@@ -93,9 +97,9 @@ class ReceiptPaymentEntry extends Model
         if (!$this->pair_id) {
             return collect([]);
         }
-        
+
         $otherType = $this->type === 'payment' ? 'receipt' : 'payment';
-        
+
         return self::where('pair_id', $this->pair_id)
             ->where('type', $otherType)
             ->where('id', '!=', $this->id)
@@ -166,5 +170,4 @@ class ReceiptPaymentEntry extends Model
         // Fallback to stored acode only if no relationship exists
         return $this->acode;
     }
-
 }

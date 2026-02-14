@@ -11,36 +11,20 @@ use Illuminate\Http\Request;
 
 class CashbookController extends Controller
 {
-    /*public function index()
-    {
-        $cashbooks = Cashbook::orderByDesc('period_year')
-            ->orderBy('period_month')
-            ->paginate(15);
-
-        return view('cashbooks.index', compact('cashbooks'));
-    }*/
-
     public function index(Request $request)
     {
-        $sessionYear = SessionYear::select(
-            'id',
-            'session_name',
-            'slug',
-            'start_date',
-            'end_date'
-        )->get();
         $session_filter = $request->get('session_id', 1);
+        $account_type = $request->get('account_type', 1);
 
         $cashbooks = Cashbook::where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->orderByDesc('period_year')
             ->orderBy('period_month')
             ->paginate(15)
             ->withQueryString();
 
-        return view('cashbooks.index', compact('cashbooks', 'sessionYear', 'session_filter'));
+        return view('cashbooks.index', compact('cashbooks'));
     }
-
-
 
     public function create()
     {

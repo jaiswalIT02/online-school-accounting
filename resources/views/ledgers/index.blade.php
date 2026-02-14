@@ -5,24 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Ledgers</h4>
         <div class="d-flex gap-2">
-            <form method="GET" action="{{ route('cashbooks.index') }}">
-                <select name="session_id"
-                    id="session_id"
-                    class="form-control"
-                    onchange="this.form.submit()">
-
-                    <option value="">-- Select Session Year --</option>
-
-                    @foreach ($sessionYear as $year)
-                    <option value="{{ $year->id }}"
-                        {{ $session_filter == $year->id ? 'selected' : '' }}>
-                        {{ $year->session_name }}
-                    </option>
-                    @endforeach
-
-                </select>
-            </form>
-
+            
             <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#createAllLedgersModal">
                 <i class="bi bi-book"></i> Create All Ledgers from Activities
             </button>

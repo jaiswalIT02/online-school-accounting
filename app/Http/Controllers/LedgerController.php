@@ -14,25 +14,15 @@ class LedgerController extends Controller
 {
     public function index(Request $request)
     {
-        // $ledgers = Ledger::orderBy('name')->paginate(15);
-
-        // return view('ledgers.index', compact('ledgers'));
-
-        $sessionYear = SessionYear::select(
-            'id',
-            'session_name',
-            'slug',
-            'start_date',
-            'end_date'
-        )->get();
         $session_filter = $request->get('session_id', 1);
+        $account_type = $request->get('account_type', 1);
 
         $ledgers = Ledger::where('session_year_id', $session_filter)
-            
+            ->where('account_type_id', $account_type)
             ->paginate(15)
             ->withQueryString();
 
-        return view('ledgers.index', compact('ledgers', 'sessionYear', 'session_filter'));
+        return view('ledgers.index', compact('ledgers', 'session_filter'));
     }
 
     public function create()
@@ -51,7 +41,7 @@ class LedgerController extends Controller
         ]);
 
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
-        
+
         // Convert string fields to uppercase
         if (isset($data['name'])) $data['name'] = strtoupper($data['name']);
         if (isset($data['opening_balance_type'])) $data['opening_balance_type'] = strtoupper($data['opening_balance_type']);
@@ -70,19 +60,19 @@ class LedgerController extends Controller
         // Normal entries: have amount > 0 and particular_name doesn't start with tax identifiers
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where(function($query) use ($ledger) {
-                $query->whereHas('article', function($q) use ($ledger) {
+            ->where(function ($query) use ($ledger) {
+                $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
                 })
-                ->orWhereHas('beneficiary', function($q) use ($ledger) {
-                    $q->where('name', $ledger->name);
-                });
+                    ->orWhereHas('beneficiary', function ($q) use ($ledger) {
+                        $q->where('name', $ledger->name);
+                    });
             })
             ->where('amount', '>', 0) // Only entries with actual amount
-            ->where(function($query) {
+            ->where(function ($query) {
                 // Exclude tax entries by particular_name
                 $query->where('particular_name', 'NOT LIKE', 'PTAX%')
-                      ->where('particular_name', 'NOT LIKE', 'TDS%');
+                    ->where('particular_name', 'NOT LIKE', 'TDS%');
             })
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
             ->get();
@@ -99,13 +89,13 @@ class LedgerController extends Controller
         foreach ($rpeEntries as $rpeEntry) {
             // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-            
+
             // Receipt entries: amount on credit side, balance type Cr
             // Payment entries: amount on debit side, balance type Dr
             $credit = $rpeEntry->type === 'receipt' ? $rpeEntry->amount : 0;
             $debit = $rpeEntry->type === 'payment' ? $rpeEntry->amount : 0;
             $balanceType = $rpeEntry->type === 'receipt' ? 'Cr' : 'Dr';
-            
+
             // Calculate running balance
             $runningBalance += $debit;
             $runningBalance -= $credit;
@@ -172,13 +162,13 @@ class LedgerController extends Controller
         // Normal entries: have amount > 0
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where(function($query) use ($ledger) {
-                $query->whereHas('article', function($q) use ($ledger) {
+            ->where(function ($query) use ($ledger) {
+                $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
                 })
-                ->orWhereHas('beneficiary', function($q) use ($ledger) {
-                    $q->where('name', $ledger->name);
-                });
+                    ->orWhereHas('beneficiary', function ($q) use ($ledger) {
+                        $q->where('name', $ledger->name);
+                    });
             })
             ->where('amount', '>', 0) // Only entries with actual amount
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
@@ -206,13 +196,13 @@ class LedgerController extends Controller
         foreach ($rpeEntries as $rpeEntry) {
             // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-            
+
             // Receipt entries: amount on credit side, balance type Cr
             // Payment entries: amount on debit side, balance type Dr
             $credit = $rpeEntry->type === 'receipt' ? $rpeEntry->amount : 0;
             $debit = $rpeEntry->type === 'payment' ? $rpeEntry->amount : 0;
             $balanceType = $rpeEntry->type === 'receipt' ? 'Cr' : 'Dr';
-            
+
             // Calculate running balance
             $runningBalance += $debit;
             $runningBalance -= $credit;
@@ -245,7 +235,7 @@ class LedgerController extends Controller
     {
         // Show selection page to choose Receipt & Payment account
         $accounts = ReceiptPaymentAccount::orderByDesc('period_from')->get();
-        
+
         return view('ledgers.import', compact('ledger', 'accounts'));
     }
 
@@ -256,17 +246,17 @@ class LedgerController extends Controller
         ]);
 
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
-        
+
         // Find all receipt_payment_entries by article_id or beneficiary_id matching ledger name
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
-            ->where(function($query) use ($ledger) {
-                $query->whereHas('article', function($q) use ($ledger) {
+            ->where(function ($query) use ($ledger) {
+                $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
                 })
-                ->orWhereHas('beneficiary', function($q) use ($ledger) {
-                    $q->where('name', $ledger->name);
-                });
+                    ->orWhereHas('beneficiary', function ($q) use ($ledger) {
+                        $q->where('name', $ledger->name);
+                    });
             })
             ->get();
 
@@ -288,9 +278,9 @@ class LedgerController extends Controller
             // Check if entry already exists by receipt_payment_entry_id (excluding tax entries)
             $existingEntry = LedgerEntry::where('ledger_id', $ledger->id)
                 ->where('receipt_payment_entry_id', $rpeEntry->id)
-                ->where(function($query) {
+                ->where(function ($query) {
                     $query->whereNull('narration')
-                          ->orWhere('narration', 'NOT LIKE', 'TAX_ENTRY:%');
+                        ->orWhere('narration', 'NOT LIKE', 'TAX_ENTRY:%');
                 })
                 ->first();
 
@@ -381,7 +371,7 @@ class LedgerController extends Controller
             $day = (int) $matches[1];
             $month = (int) $matches[2];
             $year = (int) $matches[3];
-            
+
             try {
                 return \Carbon\Carbon::create($year, $month, $day);
             } catch (\Exception $e) {

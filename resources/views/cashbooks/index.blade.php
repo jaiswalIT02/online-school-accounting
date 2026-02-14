@@ -5,24 +5,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Cashbooks</h4>
         <div class="d-flex gap-2">
-            <form method="GET" action="{{ route('cashbooks.index') }}">
-                <select name="session_id"
-                    id="session_id"
-                    class="form-control"
-                    onchange="this.form.submit()">
-
-                    <option value="">-- Select Session Year --</option>
-
-                    @foreach ($sessionYear as $year)
-                    <option value="{{ $year->id }}"
-                        {{ $session_filter == $year->id ? 'selected' : '' }}>
-                        {{ $year->session_name }}
-                    </option>
-                    @endforeach
-
-                </select>
-            </form>
-
             <form method="POST" action="{{ route('cashbooks.create_all_months') }}" class="d-inline">
                 @csrf
                 <button type="submit" class="btn btn-success" onclick="return confirm('This will create 12 cashbooks from April 2025 to March 2026 (financial year). Continue?')">Create 12 Months Cashbooks</button>

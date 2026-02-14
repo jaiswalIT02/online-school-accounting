@@ -48,6 +48,25 @@ Route::middleware('auth')->group(function () {
     Route::get('funds/view-all', [FundController::class, 'show'])->name('funds.view_all');
     Route::resource('receipt-payments', ReceiptPaymentAccountController::class)
         ->names('receipt_payments');
+    // Route::get('/receipt', [ReceiptPaymentAccountController::class, 'receiptCreate'])->name('receipt.create');
+    // Route::resource('/receipt', ReceiptPaymentAccountController::class)
+    //     ->only(['createreceipt', 'storereceipt'])
+    //     ->names([
+    //         'create' => 'receipt.create',
+    //         'store' => 'receipt.store',
+    //     ]);
+    Route::get('/receipt/create/{id}', [ReceiptPaymentEntryController::class, 'createReceipt'])
+        ->name('receipt.create');
+    Route::post('/receipt/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
+        ->name('receipt.store');
+
+    Route::get('/payment/create/{id}', [ReceiptPaymentEntryController::class, 'createPayment'])
+        ->name('payment.create');
+
+    Route::post('/payment/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
+        ->name('payment.store');
+
+    Route::get('/payments', [ReceiptPaymentAccountController::class, 'index'])->name('payments.index');
     Route::get('receipt-payments/{receipt_payment}/print', [ReceiptPaymentAccountController::class, 'print'])
         ->name('receipt_payments.print');
     Route::post('receipt-payments/{receipt_payment}/create-cashbook', [ReceiptPaymentAccountController::class, 'createCashbook'])
@@ -58,7 +77,7 @@ Route::middleware('auth')->group(function () {
             'create' => 'receipt_payment_entries.create',
             'store' => 'receipt_payment_entries.store',
         ]);
-    
+
     // Bulk routes must come before {entry} routes so "bulk-edit" / "bulk-update" are not matched as entry IDs
     Route::post('receipt-payment-entries/bulk-destroy', [ReceiptPaymentEntryController::class, 'bulkDestroy'])
         ->name('receipt_payment_entries.bulk_destroy');
@@ -88,7 +107,7 @@ Route::middleware('auth')->group(function () {
             'create' => 'cashbook_entries.create',
             'store' => 'cashbook_entries.store',
         ]);
-    
+
     // Shallow routes for cashbook entries edit, update, destroy (not nested)
     Route::get('cashbook-entries/{entry}/edit', [CashbookEntryController::class, 'edit'])
         ->name('cashbook_entries.edit');
@@ -96,7 +115,7 @@ Route::middleware('auth')->group(function () {
         ->name('cashbook_entries.update');
     Route::delete('cashbook-entries/{entry}', [CashbookEntryController::class, 'destroy'])
         ->name('cashbook_entries.destroy');
-    
+
     Route::resource('ledgers', LedgerController::class);
     Route::get('ledgers/{ledger}/print', [LedgerController::class, 'print'])
         ->name('ledgers.print');
@@ -110,7 +129,7 @@ Route::middleware('auth')->group(function () {
         ->shallow()
         ->only(['create', 'store', 'edit', 'update', 'destroy'])
         ->names('ledger_entries');
-    
+
     // Tax Ledger routes
     Route::get('tax-ledgers', [TaxLedgerController::class, 'index'])
         ->name('tax_ledgers.index');
@@ -118,15 +137,15 @@ Route::middleware('auth')->group(function () {
         ->name('tax_ledgers.show');
     Route::get('tax-ledgers/{article}/print', [TaxLedgerController::class, 'print'])
         ->name('tax_ledgers.print');
-    
+
     // PDF Extract routes
     Route::get('pdf-extract', [PdfExtractController::class, 'index'])->name('pdf_extract.index');
     Route::post('pdf-extract/extract', [PdfExtractController::class, 'extract'])->name('pdf_extract.extract');
     Route::post('pdf-extract/save', [PdfExtractController::class, 'save'])->name('pdf_extract.save');
-    
+
     // Reports routes
     Route::get('reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
-    
+
     // Students routes - Import and Export routes must come BEFORE resource route
     Route::get('students/import', [StudentController::class, 'import'])->name('students.import');
     Route::post('students/import', [StudentController::class, 'processImport'])->name('students.processImport');
@@ -135,7 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::get('students/bin', [StudentController::class, 'bin'])->name('students.bin');
     Route::post('students/{id}/restore', [StudentController::class, 'restore'])->name('students.restore');
     Route::resource('students', StudentController::class);
-    
+
     // Staff routes - Import and Export routes must come BEFORE resource route
     Route::get('staff/import', [StaffController::class, 'import'])->name('staff.import');
     Route::post('staff/import', [StaffController::class, 'processImport'])->name('staff.processImport');
@@ -146,6 +165,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('staff', StaffController::class);
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

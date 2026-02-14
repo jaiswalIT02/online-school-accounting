@@ -25,8 +25,55 @@ class ReceiptPaymentEntryController extends Controller
         ));
     }
 
+    public function createReceipt($id, Request $request)
+    {
+        $receipt_payment = ReceiptPaymentAccount::find($id);
+        $account_type = $request->get('account_type');
+        if ($account_type != 1) {
+
+            $type = request('type', 'both');
+            $articles = Article::orderBy('name')->get();
+            $beneficiaries = Beneficiary::orderBy('name')->get();
+
+            return view('receipt.create', compact(
+                'receipt_payment',
+                'type',
+                'articles',
+                'beneficiaries'
+            ));
+        } else {
+            return redirect()
+                ->back()
+                ->with('status', 'This page is only allowed for account type 2, Not accessible!');
+        }
+    }
+
+    public function createPayment($id, Request $request)
+    {
+        $receipt_payment = ReceiptPaymentAccount::find($id);
+        $account_type = $request->get('account_type');
+        if ($account_type != 1) {
+
+            $type = request('type', 'both');
+            $articles = Article::orderBy('name')->get();
+            $beneficiaries = Beneficiary::orderBy('name')->get();
+
+            return view('payments.create', compact(
+                'receipt_payment',
+                'type',
+                'articles',
+                'beneficiaries'
+            ));
+        } else {
+            return redirect()
+                ->back()
+                ->with('status', 'This page is only allowed for account type 2, Not accessible!');
+        }
+    }
+
     public function store(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
+        // dd($request->toArray());
         $data = $this->validateEntry($request);
         $data['receipt_payment_account_id'] = $receipt_payment->id;
 
@@ -35,7 +82,7 @@ class ReceiptPaymentEntryController extends Controller
         if ($data['remarks'] && preg_match('/Txn ID:\s*(\d+)/i', $data['remarks'], $matches)) {
             $txnId = $matches[1];
         }
-        
+
         // Use date from input if provided, otherwise extract PPA date from remarks
         $ppaDate = !empty($data['date']) ? $data['date'] : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
 
@@ -61,13 +108,62 @@ class ReceiptPaymentEntryController extends Controller
             $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
                 'type' => 'receipt',
             ]));
-            
+
             // Create payment entry with same transaction ID in pair_id
             $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
 
             return redirect()
                 ->route('receipt_payments.show', $receipt_payment)
                 ->with('status', 'Entry added as both payment and receipt.');
+        } else if ($data['type'] === 'receipt') {
+
+            $entryData = [
+                'receipt_payment_account_id' => $receipt_payment->id,
+                'article_id' => $data['article_id'] ?? null,
+                'beneficiary_id' => $data['beneficiary_id'] ?? null,
+                'particular_name' => $data['particular_name'],
+                'acode' => $data['acode'],
+                'amount' => $data['amount'],
+                'remarks' => $data['remarks'] ?? null,
+                'date' => $ppaDate, // Store date in dd/mm/yyyy format
+                'tax_amount' => $data['tax_amount'] ?? null,
+                'tax_for' => $data['tax_for'] ?? null,
+                'tax_type' => $data['tax_type'] ?? null,
+                'tax_remark' => $data['tax_remark'] ?? null,
+                'pair_id' => $txnId, // Store transaction ID in pair_id
+            ];
+
+            // Create receipt entry first
+            $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
+                'type' => 'receipt',
+            ]));
+
+            return redirect()
+                ->route('receipt.create', ['account_type' => 2, $receipt_payment])
+                ->with('status', 'Entry added as receipt.');
+        } else if ($data['type'] === 'payment') {
+
+            $entryData = [
+                'receipt_payment_account_id' => $receipt_payment->id,
+                'article_id' => $data['article_id'] ?? null,
+                'beneficiary_id' => $data['beneficiary_id'] ?? null,
+                'particular_name' => $data['particular_name'],
+                'acode' => $data['acode'],
+                'amount' => $data['amount'],
+                'remarks' => $data['remarks'] ?? null,
+                'date' => $ppaDate, // Store date in dd/mm/yyyy format
+                'tax_amount' => $data['tax_amount'] ?? null,
+                'tax_for' => $data['tax_for'] ?? null,
+                'tax_type' => $data['tax_type'] ?? null,
+                'tax_remark' => $data['tax_remark'] ?? null,
+                'pair_id' => $txnId, // Store transaction ID in pair_id
+            ];
+
+            $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
+
+            return redirect()
+                ->route('payment.create', ['account_type' => 2,  $receipt_payment])
+                ->with('status', 'Entry added as payment.');
         } else {
             // Single entry (payment or receipt) - store transaction ID in pair_id if available
             if ($txnId) {
@@ -88,7 +184,7 @@ class ReceiptPaymentEntryController extends Controller
         $receipt_payment = $entry->account;
         $articles = Article::orderBy('name')->get();
         $beneficiaries = Beneficiary::orderBy('name')->get();
-        
+
         // Load relationships to ensure acode is available
         $entry->load(['article', 'beneficiary']);
 
@@ -114,13 +210,13 @@ class ReceiptPaymentEntryController extends Controller
         if ($data['remarks'] && preg_match('/Txn ID:\s*(\d+)/i', $data['remarks'], $matches)) {
             $txnId = $matches[1];
         }
-        
+
         // Use date from input if provided, otherwise extract PPA date from remarks
         $ppaDate = !empty($data['date']) ? $data['date'] : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
 
         // Find corresponding entry FIRST, before updating current entry
         $correspondingEntry = null;
-        
+
         if ($data['type'] === 'both') {
             // Find by pair_id (transaction ID) - entries with same pair_id and opposite type
             if ($txnId) {
@@ -130,7 +226,7 @@ class ReceiptPaymentEntryController extends Controller
                     ->where('id', '!=', $entry->id)
                     ->first();
             }
-            
+
             // Fallback: If no transaction ID in new remarks, try using existing pair_id
             if (!$correspondingEntry && $entry->pair_id) {
                 $correspondingEntry = $account->entries()
@@ -194,7 +290,7 @@ class ReceiptPaymentEntryController extends Controller
                     'tax_remark' => $data['tax_remark'] ?? null,
                     'pair_id' => $txnId, // Update pair_id with transaction ID
                 ]);
-                
+
                 $message = 'Entry updated. Corresponding entry on the other side also updated.';
             } else {
                 // No corresponding entry found - only update current entry
@@ -271,7 +367,7 @@ class ReceiptPaymentEntryController extends Controller
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
-        $entries = $entries->filter(fn ($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
+        $entries = $entries->filter(fn($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
         if ($entries->isEmpty()) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
@@ -306,7 +402,7 @@ class ReceiptPaymentEntryController extends Controller
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
-        $entries = $entries->filter(fn ($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
+        $entries = $entries->filter(fn($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
         if ($entries->isEmpty()) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
@@ -459,7 +555,7 @@ class ReceiptPaymentEntryController extends Controller
         $data['article_id'] = $articleParsed['id'];
         $data['particular_name'] = $articleParsed['name'];
         $data['acode'] = $articleParsed['acode'];
-        
+
         // Vendor is optional
         if ($beneficiaryParsed) {
             $data['beneficiary_id'] = $beneficiaryParsed['id'];
@@ -513,7 +609,7 @@ class ReceiptPaymentEntryController extends Controller
             'acode' => $item->acode ?? '',
         ];
     }
-    
+
     /**
      * Extract PPA Date from remarks and format as dd/mm/yyyy
      * Format: "PPA Date: 03/08/2025" or "PPA Date: 03-08-2025"
@@ -529,7 +625,7 @@ class ReceiptPaymentEntryController extends Controller
             $day = $matches[1];
             $month = $matches[2];
             $year = $matches[3];
-            
+
             // Return in dd/mm/yyyy format
             return $day . '/' . $month . '/' . $year;
         }
