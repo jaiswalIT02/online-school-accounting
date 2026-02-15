@@ -208,7 +208,43 @@ class TaxLedgerController extends Controller
         $closingBalance = abs($runningBalance);
         $closingBalanceType = $runningBalance < 0 ? 'Cr' : 'Dr';
 
-        return view('tax_ledgers.print', compact('article', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
+        $pages = collect($rows)->chunk(2);
+
+        $pages = collect($pages); // assuming $pages is already a collection or array of chunks
+
+        $previousClosingBalance = 0;
+
+        $pages = $pages->map(function ($page, $index) use (&$previousClosingBalance) {
+            $entries = $page; // original collection of rows
+
+            $totalDebit = $entries->sum(fn($item) => (float)($item['entry']->debit ?? 0));
+            $totalCredit = $entries->sum(fn($item) => (float)($item['entry']->credit ?? 0));
+
+            $totalDebit += $previousClosingBalance < 0 ? abs($previousClosingBalance) : $previousClosingBalance;
+
+            $closingBalance = $totalDebit - $totalCredit;
+
+            if ($index === 0) {
+                $openingBalance = 0;
+            } else {
+                $openingBalance = $previousClosingBalance;
+            }
+
+
+            $previousClosingBalance = $closingBalance;
+
+            return [
+                'entries' => $entries, // ✅ keep your rows here
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit,
+                'closing_balance' => $closingBalance,
+                'opening_balance' => $openingBalance,
+                'page_number' => $index + 1,
+            ];
+        });
+        // dd($pages);
+
+        return view('tax_ledgers.print', compact('pages','article', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
     }
 
     /**

@@ -162,13 +162,13 @@ class LedgerController extends Controller
         // Normal entries: have amount > 0
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where(function ($query) use ($ledger) {
-                $query->whereHas('article', function ($q) use ($ledger) {
+            ->where(function($query) use ($ledger) {
+                $query->whereHas('article', function($q) use ($ledger) {
                     $q->where('name', $ledger->name);
                 })
-                    ->orWhereHas('beneficiary', function ($q) use ($ledger) {
-                        $q->where('name', $ledger->name);
-                    });
+                ->orWhereHas('beneficiary', function($q) use ($ledger) {
+                    $q->where('name', $ledger->name);
+                });
             })
             ->where('amount', '>', 0) // Only entries with actual amount
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
@@ -196,13 +196,13 @@ class LedgerController extends Controller
         foreach ($rpeEntries as $rpeEntry) {
             // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-
+            
             // Receipt entries: amount on credit side, balance type Cr
             // Payment entries: amount on debit side, balance type Dr
             $credit = $rpeEntry->type === 'receipt' ? $rpeEntry->amount : 0;
             $debit = $rpeEntry->type === 'payment' ? $rpeEntry->amount : 0;
             $balanceType = $rpeEntry->type === 'receipt' ? 'Cr' : 'Dr';
-
+            
             // Calculate running balance
             $runningBalance += $debit;
             $runningBalance -= $credit;
@@ -218,6 +218,7 @@ class LedgerController extends Controller
                     'credit' => $credit,
                     'narration' => $rpeEntry->remarks,
                     'is_rpe_entry' => true,
+                    'balance' => abs($runningBalance),
                 ],
                 'is_opening' => false,
                 'balance' => abs($runningBalance),
@@ -225,10 +226,52 @@ class LedgerController extends Controller
             ];
         }
 
+
+
         $closingBalance = abs($runningBalance);
         $closingBalanceType = $runningBalance < 0 ? 'Cr' : 'Dr';
+        $pages = collect($rows)->chunk(10);
 
-        return view('ledgers.print', compact('ledger', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
+        $pages = collect($pages); // assuming $pages is already a collection or array of chunks
+
+        $previousClosingBalance = 0;
+
+        $pages = $pages->map(function ($page, $index) use (&$previousClosingBalance) {
+            $entries = $page; // original collection of rows
+
+            $totalDebit = $entries->sum(fn($item) => (float)($item['entry']->debit ?? 0));
+            $totalCredit = $entries->sum(fn($item) => (float)($item['entry']->credit ?? 0));
+
+            $totalDebit += $previousClosingBalance < 0 ? abs($previousClosingBalance) : $previousClosingBalance;
+
+            $closingBalance = $totalDebit - $totalCredit;
+
+            if ($index === 0) {
+                $openingBalance = 0;
+            } else {
+                $openingBalance = $previousClosingBalance;
+            }
+
+            $previousClosingBalance = $closingBalance;
+
+            return [
+                'entries' => $entries, // ✅ keep your rows here
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit,
+                'opening_date' => $entries->first()['entry']->entry_date ?? null,
+                'closing_date' => $entries->last()['entry']->entry_date ?? null,
+                'closing_balance' => $closingBalance,
+                'opening_balance' => $openingBalance,
+                'page_number' => $index + 1,
+            ];
+        });
+
+
+        // dd($rows);
+
+        // dd($pages);
+
+        return view('ledgers.print', compact('pages','ledger', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
     }
 
     public function import(Ledger $ledger)

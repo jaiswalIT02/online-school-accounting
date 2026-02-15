@@ -297,7 +297,7 @@
         .cashbook-table td.bank-col {
             text-align: right;
             padding-right: 4px;
-            width: 14%;
+            width: 11%;
         }
         
         .cashbook-table td.total-col {
@@ -415,19 +415,19 @@
                                 <th class="voucher-col" style="width: 8%"><div class="rotated-text">Voucher No</div></th>
                                 <th class="particulars" style="width: 40%">PARTICULARS</th>
                                 <th style="width: 10%">
-                                    <div>Amount</div>
+                                    <div>Cash Amount</div>
                                     <div style="display: flex; justify-content: space-around; font-size: 8pt; font-weight: normal; margin-top: 2px;">
                                         <span>Rs.</span>
                                         <span>P.</span>
                                     </div>
                                 </th>
                                 <th class="folio-col" style="width: 5%"><div class="rotated-text">L. Folio</div></th>
-                                <th style="width: 14%">
+                                <th style="width: 11%">
                                     <div>Bank</div>
                                     <div style="display: flex; justify-content: space-around; font-size: 8pt; font-weight: normal; margin-top: 2px;">
                                         <span>Rs.</span>
                                         <span>P.</span>
-                                    </div>
+                                    </div> 
                                 </th>
                                 <th style="width: 14%">
                                     <div>Total Amount</div>
@@ -439,15 +439,35 @@
                             </tr>
                             {{-- OPENING BALANCE BOX --}}
                                 <tr class="opening-balance-row">
-                                    <td class="date-col"></td>
+                                    <td class="date-col">
+                                    @if($pageIndex == 0)
+                                    {{ $firstDate->format('d/m/y') }}
+                                    @else
+                                    {{ $receiptPage['entries']->first()->entry_date->format('d/m/y') }}
+                                    @endif
+                                    </td>
                                     <td class="voucher-col"></td>
                                     <td class="particulars-col">
                                         <span class="particulars-text">Opening Balance</span>
                                     </td>
                                     <td class="amount-col"></td>
                                     <td class="folio-col"></td>
-                                    <td class="bank-col"></td>
-                                    <td class="total-col"></td>
+                                    <td class="bank-col">
+                                    @if ($receiptPage && ($receiptPage['opening']['bank'] ?? 0))
+                                        <div class="amount-split">
+                                            <span class="rs">{{ number_format($receiptPage['opening']['bank'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
+                                        </div>
+                                    @endif
+                                    </td>
+                                    <td class="total-col">
+                                    @if ($receiptPage && isset($receiptPage['opening']['total']))
+                                        <div class="amount-split">
+                                            <span class="rs">{{ number_format($receiptPage['opening']['total'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
+                                        </div>
+                                    @endif
+                                    </td>
                                 </tr>
                         </thead>
                         <tbody>
@@ -496,16 +516,16 @@
                                         <td class="bank-col">
                                             @if ($entry->bank_amount > 0)
                                                 <div class="amount-split">
-                                                    <span class="rs">{{ number_format($entry->bank_amount, 0, '.', ',') }}</span>
-                                                    <span class="p">00</span>
+                                                    <span class="rs">{{ number_format($entry->bank_amount, 2, '.', ',') }}</span>
+                                                    {{-- <span class="p">00</span> --}}
                                                 </div>
                                             @endif
                                         </td>
                                         <td class="total-col">
                                             @if ($entry->bank_amount > 0)
                                                 <div class="amount-split">
-                                                    <span class="rs">{{ number_format($entry->bank_amount, 0, '.', ',') }}</span>
-                                                    <span class="p">00</span>
+                                                    <span class="rs">{{ number_format($entry->bank_amount, 2, '.', ',') }}</span>
+                                                    {{-- <span class="p">00</span> --}}
                                                 </div>
                                             @endif
                                         </td>
@@ -516,6 +536,17 @@
                         {{-- TOTAL BOX - ALWAYS AT BOTTOM --}}
                             
                         <tfoot>
+                            <tr class="closing-balance-row">
+                                <td class="date-col"></td>
+                                <td class="voucher-col"></td>
+                                <td class="particulars-col">
+                                    <span class="particulars-text">-</span>
+                                </td>
+                                <td class="amount-col"></td>
+                                <td class="folio-col"></td>
+                                <td class="bank-col"></td>
+                                <td class="total-col"></td>
+                            </tr>
                             {{-- CLOSING BALANCE BOX - ALWAYS AT BOTTOM --}}
                             <tr class="closing-balance-row">
                                 <td class="date-col"></td>
@@ -534,18 +565,18 @@
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>
                                 <td class="bank-col">
-                                    @if ($receiptPage && ($receiptPage['cumulative_total'] ?? 0) > 0)
+                                    @if ($receiptPage && ($receiptPage['closing']['bank'] ?? 0))
                                         <div class="amount-split">
-                                            <span class="rs">{{ number_format($receiptPage['cumulative_total'], 0, '.', ',') }}</span>
-                                            <span class="p">00</span>
+                                            <span class="rs">{{ number_format($receiptPage['closing']['bank'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
                                         </div>
                                     @endif
                                 </td>
                                 <td class="total-col">
-                                    @if ($receiptPage && ($receiptPage['cumulative_total'] ?? 0) > 0)
+                                    @if ($receiptPage && ($receiptPage['closing']['total'] ?? 0))
                                         <div class="amount-split">
-                                            <span class="rs">{{ number_format($receiptPage['cumulative_total'], 0, '.', ',') }}</span>
-                                            <span class="p">00</span>
+                                            <span class="rs">{{ number_format($receiptPage['closing']['total'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
                                         </div>
                                     @endif
                                 </td>
@@ -564,14 +595,14 @@
                                 <th class="voucher-col" style="width: 8%"><div class="rotated-text">Voucher No</div></th>
                                 <th class="particulars" style="width: 40%">PARTICULARS</th>
                                 <th style="width: 10%">
-                                    <div>Amount</div>
+                                    <div>Cash Amount</div>
                                     <div style="display: flex; justify-content: space-around; font-size: 8pt; font-weight: normal; margin-top: 2px;">
                                         <span>Rs.</span>
                                         <span>P.</span>
                                     </div>
                                 </th>
                                 <th class="folio-col" style="width: 5%"><div class="rotated-text">L. Folio</div></th>
-                                <th style="width: 14%">
+                                <th style="width: 11%">
                                     <div>Bank</div>
                                     <div style="display: flex; justify-content: space-around; font-size: 8pt; font-weight: normal; margin-top: 2px;">
                                         <span>Rs.</span>
@@ -645,16 +676,16 @@
                                         <td class="bank-col">
                                             @if ($entry->bank_amount > 0)
                                                 <div class="amount-split">
-                                                    <span class="rs">{{ number_format($entry->bank_amount, 0, '.', ',') }}</span>
-                                                    <span class="p">00</span>
+                                                    <span class="rs">{{ number_format($entry->bank_amount, 2, '.', ',') }}</span>
+                                                    {{-- <span class="p">00</span> --}}
                                                 </div>
                                             @endif
                                         </td>
                                         <td class="total-col">
                                             @if ($entry->bank_amount > 0)
                                                 <div class="amount-split">
-                                                    <span class="rs">{{ number_format($entry->bank_amount, 0, '.', ',') }}</span>
-                                                    <span class="p">00</span>
+                                                    <span class="rs">{{ number_format($entry->bank_amount, 2, '.', ',') }}</span>
+                                                    {{-- <span class="p">00</span> --}}
                                                 </div>
                                             @endif
                                         </td>
@@ -673,16 +704,59 @@
                                 <td class="total-col"></td>
                             </tr> -->
                             {{-- CLOSING BALANCE BOX - ALWAYS AT BOTTOM --}}
+                            <tr>
+                                <td class="date-col" style="text-align: left; padding-left: 6px;">Total Payment</td>
+                                <td class="voucher-col"></td>
+                                <td class="particular-col"></td>
+                                <td class="amount-col"></td>
+                                <td class="folio-col"></td>
+                                <td class="bank-col">
+                                    @if ($paymentPage && ($paymentPage['opening']['bank'] ?? 0))
+                                        <div class="amount-split">
+                                            <span class="rs">{{ number_format($paymentPage['opening']['bank'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="total-col">
+                                    @if ($paymentPage && ($paymentPage['opening']['total'] ?? 0))
+                                        <div class="amount-split">
+                                            <span class="rs">{{ number_format($paymentPage['opening']['total'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
+                                        </div>
+                                    @endif
+                                </td>
+                            </tr>
                             <tr class="closing-balance-row">
-                                <td class="date-col"></td>
+                                <td class="date-col">
+                                @if($pageIndex == $maxPages-1)
+                                {{ $lastDate->format('d/m/y') }}
+                                @else
+                                {{ $paymentPage['entries']->last()->entry_date->format('d/m/y') }}
+                                @endif
+                                </td>
                                 <td class="voucher-col"></td>
                                 <td class="particulars-col">
                                     <span class="particulars-text">Closing Balance</span>
                                 </td>
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>
-                                <td class="bank-col"></td>
-                                <td class="total-col"></td>
+                                <td class="bank-col">
+                                @if ($paymentPage && ($paymentPage['closing']['bank'] ?? 0))
+                                        <div class="amount-split">
+                                            <span class="rs">{{ number_format($paymentPage['closing']['bank'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="total-col">
+                                @if ($paymentPage && ($paymentPage['closing']['total'] ?? 0))
+                                    <div class="amount-split">
+                                        <span class="rs">{{ number_format($paymentPage['closing']['total'], 2, '.', ',') }}</span>
+                                        {{-- <span class="p">00</span> --}}
+                                    </div>
+                                @endif
+                                </td>
                             </tr>
                             {{-- TOTAL BOX - cumulative sum from page 1 through this page --}}
                             <tr>
@@ -690,18 +764,18 @@
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>
                                 <td class="bank-col">
-                                    @if ($paymentPage && ($paymentPage['cumulative_total'] ?? 0) > 0)
+                                    @if ($paymentPage && ($paymentPage['opening']['bank'] ?? 0))
                                         <div class="amount-split">
-                                            <span class="rs">{{ number_format($paymentPage['cumulative_total'], 0, '.', ',') }}</span>
-                                            <span class="p">00</span>
+                                            <span class="rs">{{ number_format($paymentPage['opening']['bank'] + $paymentPage['closing']['bank'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
                                         </div>
                                     @endif
                                 </td>
                                 <td class="total-col">
-                                    @if ($paymentPage && ($paymentPage['cumulative_total'] ?? 0) > 0)
+                                    @if ($paymentPage && ($paymentPage['opening']['total'] ?? 0))
                                         <div class="amount-split">
-                                            <span class="rs">{{ number_format($paymentPage['cumulative_total'], 0, '.', ',') }}</span>
-                                            <span class="p">00</span>
+                                            <span class="rs">{{ number_format($paymentPage['opening']['total'] + $paymentPage['closing']['total'], 2, '.', ',') }}</span>
+                                            {{-- <span class="p">00</span> --}}
                                         </div>
                                     @endif
                                 </td>

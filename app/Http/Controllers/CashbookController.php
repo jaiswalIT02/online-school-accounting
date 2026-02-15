@@ -431,16 +431,24 @@ class CashbookController extends Controller
                 'total' => $runningReceiptTotal,
             ];
 
-            // Update running totals (opening balance + transactions)
-            $runningReceiptCash += $pageReceiptCash;
-            $runningReceiptBank += $pageReceiptBank;
-            $runningReceiptTotal += $pageReceiptTotal;
+            if($receiptChunks->first()){
+
+                // Update running totals (opening balance + transactions)
+                // $runningReceiptCash += $pageReceiptCash;
+                // $runningReceiptBank += $pageReceiptBank;
+                // $runningReceiptTotal += $pageReceiptTotal;
+
+                $pageReceiptCash += $runningReceiptCash;
+                $pageReceiptBank += $runningReceiptBank;
+                $pageReceiptTotal += $runningReceiptTotal;
+            }
+
 
             // Closing balance for this page
             $pageClosing = [
-                'cash' => $runningReceiptCash,
-                'bank' => $runningReceiptBank,
-                'total' => $runningReceiptTotal,
+                'cash' => $pageReceiptCash,
+                'bank' => $pageReceiptBank,
+                'total' => $pageReceiptTotal,
             ];
 
             // Add this page's transaction amounts to cumulative sum
@@ -491,14 +499,14 @@ class CashbookController extends Controller
             $pagePaymentTotal = $pagePaymentCash + $pagePaymentBank;
 
             // Opening balance for this page (carried forward from previous page)
-            $pageOpeningCash = $opening['cash'] + $receiptTotals['cash'] - $runningPaymentCash;
-            $pageOpeningBank = $opening['bank'] + $receiptTotals['bank'] - $runningPaymentBank;
-            $pageOpeningTotal = $pageOpeningCash + $pageOpeningBank;
+            // $pageOpeningCash = $opening['cash'] + $receiptTotals['cash'] - $runningPaymentCash;
+            // $pageOpeningBank = $opening['bank'] + $receiptTotals['bank'] - $runningPaymentBank;
+            // $pageOpeningTotal = $pageOpeningCash + $pageOpeningBank;
 
             $pageOpening = [
-                'cash' => $pageOpeningCash,
-                'bank' => $pageOpeningBank,
-                'total' => $pageOpeningTotal,
+                'cash' => $pagePaymentCash,
+                'bank' => $pagePaymentBank,
+                'total' => $pagePaymentTotal,
             ];
 
             // Update running totals
@@ -550,17 +558,55 @@ class CashbookController extends Controller
                 'is_first_page' => true,
                 'is_last_page' => true,
             ];
-        } else {
-            // Update first payment page opening balance to show after all receipts
-            $paymentPages[0]['opening'] = [
-                'cash' => $opening['cash'] + $receiptTotals['cash'],
-                'bank' => $opening['bank'] + $receiptTotals['bank'],
-                'total' => $opening['total'] + $receiptTotals['total'],
-            ];
         }
+        // else {
+        //     // Update first payment page opening balance to show after all receipts
+        //     $paymentPages[0]['opening'] = [
+        //         'cash' => $opening['cash'] + $receiptTotals['cash'],
+        //         'bank' => $opening['bank'] + $receiptTotals['bank'],
+        //         'total' => $opening['total'] + $receiptTotals['total'],
+        //     ];
+        // }
 
         // Determine total number of pages needed
         $totalPages = max(count($receiptPages), count($paymentPages));
+
+        $firstDate = $firstEntryDate->copy()->startOfMonth(); // "2026-02-01"
+
+        // Get last date of the month
+        $lastDate = $firstEntryDate->copy()->endOfMonth(); // "2026-02-28"
+        $prevReciept = $receiptPages[0];
+        foreach ($receiptPages as $index  => $page) {
+
+            // Pad payment pages to totalPages
+            if($index == 0){
+                $paymentPages[$index]['closing'] = [
+                    'cash' => $page['closing']['cash'] + $page['opening']['cash'] - $paymentPages[$index]['opening']['cash'],
+                    'bank' => $page['closing']['bank'] + $page['opening']['bank'] - $paymentPages[$index]['opening']['bank'],
+                    'total' => $page['closing']['total'] + $page['opening']['total'] - $paymentPages[$index]['opening']['total'],
+                ];
+                continue;
+            }
+
+            $receiptClosing = unserialize(serialize($page['closing']));
+
+            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index-1]['closing']));
+
+            $receiptPages[$index]['closing'] = [
+                'cash' => $receiptClosing['cash'] + $paymentPages[$index-1]['closing']['cash'],
+                'bank' => $receiptClosing['bank'] + $paymentPages[$index-1]['closing']['bank'],
+                'total' => $receiptClosing['total'] + $paymentPages[$index-1]['closing']['total'],
+            ];
+            // Pad receipt pages to totalPages
+            $paymentPages[$index]['closing'] = [
+                'cash' => $receiptPages[$index]['closing']['cash'] - $paymentPages[$index]['opening']['cash'],
+                'bank' => $receiptPages[$index]['closing']['bank'] - $paymentPages[$index]['opening']['bank'],
+                'total' => $receiptPages[$index]['closing']['total'] - $paymentPages[$index]['opening']['total'],
+            ];
+
+        }
+
+        // dd($receiptPages, $paymentPages);
 
         return view('cashbooks.print', compact(
             'cashbook',
@@ -575,7 +621,9 @@ class CashbookController extends Controller
             'receiptPages',
             'paymentPages',
             'totalPages',
-            'firstEntryDate'
+            'firstEntryDate',
+            'firstDate',
+            'lastDate'
         ));
     }
 

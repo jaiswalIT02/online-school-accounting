@@ -220,9 +220,13 @@
             <span class="label">LEDGER A/C. of</span>
             <span class="account-name">{{ $ledger->name }}</span>
         </div>
-        <div class="page-number">11</div>
+        {{-- <div class="page-number">11</div> --}}
     </div>
 
+    @php
+        $pageNumber = 1;
+    @endphp
+    @foreach($pages as $index => $items)
     <table class="ledger-table">
         <thead>
             <tr>
@@ -253,91 +257,173 @@
                 </th>
             </tr>
         </thead>
-        <tbody>
-            @php
-                $pageNumber = 1;
-            @endphp
-            @forelse ($rows as $row)
-                @if ($row['is_opening'] ?? false)
-                    <tr class="opening-balance-row">
-                        <td class="date-col">-</td>
-                        <td class="particulars-col">
-                            <span class="particulars-text">Opening Balance</span>
-                        </td>
-                        <td class="folio-col">-</td>
-                        <td class="amount-col">
-                            <div class="amount-split">
-                                <span class="rs">-</span>
-                                <span class="p">00</span>
-                            </div>
-                        </td>
-                        <td class="amount-col">
-                            <div class="amount-split">
-                                <span class="rs">-</span>
-                                <span class="p">00</span>
-                            </div>
-                        </td>
-                        <td class="balance-type-col">{{ $row['balance_type'] }}</td>
-                        <td class="balance-col">
-                            <div class="amount-split">
-                                <span class="rs">{{ number_format($row['balance'], 0, '.', ',') }}</span>
-                                <span class="p">00</span>
-                            </div>
-                        </td>
-                    </tr>
-                @else
-                    @php($entry = $row['entry'])
+        <tbody> 
+            
+                
+                <tr style="background: #f0f0f0; font-weight: bold;">
+                    <td class="date-col"  style="text-align: center; padding-right: 8px;">{{ $items['opening_date']->format('d/m/y')}}</td>
+                    <td class="date-col" style="text-align: left; padding-right: 8px;">Opening Balance</td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                    <td class="balance-col">
+                        {{-- <div class="amount-split">
+                            <span class="rs">{{ number_format($items['opening_balance'] ?? 0, 2, '.', ',') }}</span>
+                        </div> --}}
+                    </td>
+                    <td>
+                    <div style="text-align: center; font-size: 9pt; margin-top: 2px;">
+                        {{-- {{ $closingBalanceType ?? 'Dr' }} --}}
+                    </div>
+
+                    </td>
+                    <td class="amount-col">
+                        <div class="amount-split">
+                            <span class="rs">{{ number_format($items['opening_balance'] ?? 0, 2, '.', ',') }}</span>
+                            {{-- <span class="p">00</span> --}}
+                        </div>
+                    </td>
+                </tr>
+               
+                @forelse ($items['entries'] as $row)
+                
+                    @if ($row['is_opening'] ?? false)
+                        <tr class="opening-balance-row">
+                            <td class="date-col">-</td>
+                            <td class="particulars-col">
+                                <span class="particulars-text">Opening Balance</span>
+                            </td>
+                            <td class="folio-col">-</td>
+                            <td class="amount-col">
+                                <div class="amount-split">
+                                    <span class="rs">-</span>
+                                    {{-- <span class="p">00</span> --}}
+                                </div>
+                            </td>
+                            <td class="amount-col">
+                                <div class="amount-split">
+                                    <span class="rs">-</span>
+                                    {{-- <span class="p">00</span> --}}
+                                </div>
+                            </td>
+                            <td class="balance-type-col">{{ $row['balance_type'] }}</td>
+                            <td class="balance-col">
+                                <div class="amount-split">
+                                    <span class="rs">{{ number_format($row['balance'], 2, '.', ',') }}</span>
+                                    {{-- <span class="p">00</span> --}}
+                                </div>
+                            </td>
+                        </tr>
+                    @else
+                     
+                        @php($entry = $row['entry'])
+                    
+
+                        <tr>
+                            <td class="date-col">{{ $entry?->entry_date?->format('d/m/y') }}</td>
+                            <td class="particulars-col">
+                                <span class="particulars-text">{{ $entry->particulars }}</span>
+                                @if ($entry->narration)
+                                    <div class="particulars-note">{{ $entry->narration }}</div>
+                                @endif
+                            </td>
+                            <td class="folio-col">{{ $entry->folio_no ?? '' }}</td>
+                            <td class="amount-col">
+                                @if ($entry->debit > 0)
+                                    <div class="amount-split">
+                                        <span class="rs">{{ number_format($entry->debit, 2, '.', ',') }}</span>
+                                        {{-- <span class="p">00</span> --}}
+                                    </div>
+                                @else
+                                    <div class="amount-split">
+                                        <span class="rs">-</span>
+                                        {{-- <span class="p">00</span> --}}
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="amount-col">
+                                @if ($entry->credit > 0)
+                                    <div class="amount-split">
+                                        <span class="rs">{{ number_format($entry->credit, 2, '.', ',') }}</span>
+                                        {{-- <span class="p">00</span> --}}
+                                    </div>
+                                @else
+                                    <div class="amount-split">
+                                        <span class="rs">-</span>
+                                        {{-- <span class="p">00</span> --}}
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="balance-type-col">{{ $row['balance_type'] }}</td>
+                            <td class="balance-col">
+                                <div class="amount-split">
+                                     <span class="rs">{{ number_format($entry->balance, 2, '.', ',') }}</span>
+                                    {{-- <span class="rs">00</span> --}}
+                                    {{-- <span class="p">00</span> --}}
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
+                @empty
                     <tr>
-                        <td class="date-col">{{ $entry->entry_date->format('d/m/y') }}</td>
-                        <td class="particulars-col">
-                            <span class="particulars-text">{{ $entry->particulars }}</span>
-                            @if ($entry->narration)
-                                <div class="particulars-note">{{ $entry->narration }}</div>
-                            @endif
-                        </td>
-                        <td class="folio-col">{{ $entry->folio_no ?? '' }}</td>
-                        <td class="amount-col">
-                            @if ($entry->debit > 0)
-                                <div class="amount-split">
-                                    <span class="rs">{{ number_format($entry->debit, 0, '.', ',') }}</span>
-                                    <span class="p">00</span>
-                                </div>
-                            @else
-                                <div class="amount-split">
-                                    <span class="rs">-</span>
-                                    <span class="p">00</span>
-                                </div>
-                            @endif
-                        </td>
-                        <td class="amount-col">
-                            @if ($entry->credit > 0)
-                                <div class="amount-split">
-                                    <span class="rs">{{ number_format($entry->credit, 0, '.', ',') }}</span>
-                                    <span class="p">00</span>
-                                </div>
-                            @else
-                                <div class="amount-split">
-                                    <span class="rs">-</span>
-                                    <span class="p">00</span>
-                                </div>
-                            @endif
-                        </td>
-                        <td class="balance-type-col">{{ $row['balance_type'] }}</td>
-                        <td class="balance-col">
-                            <div class="amount-split">
-                                <!-- <span class="rs">{{ number_format($row['balance'], 0, '.', ',') }}</span> -->
-                                <span class="rs">00</span>
-                                <span class="p">00</span>
-                            </div>
-                        </td>
+                        <td colspan="7" style="text-align: center; padding: 20px;">No entries yet.</td>
+                    </tr>
+                @endforelse
+                
+                <tr style="background: #f9f9f9; font-weight: bold;">
+                    <td class="date-col" colspan="3" style="text-align: right; padding-right: 8px;">Total</td>
+                    <td class="amount-col">
+                        <div class="amount-split">
+                            <span class="rs">{{ number_format($items['total_debit'] ?? 0, 2, '.', ',') }}</span>
+                            {{-- <span class="p">00</span> --}}
+                        </div>
+                    </td>
+                    <td class="amount-col">
+                        <div class="amount-split">
+                            <span class="rs">{{ number_format($items['total_credit'] ?? 0, 2, '.', ',') }}</span>
+                            {{-- <span class="p">00</span> --}}
+                        </div>
+                    </td>
+                    <td class="balance-type-col">{{ $closingBalanceType ?? 'Dr' }}</td>
+                    <td class="balance-col">
+                        <div class="amount-split">
+                            <span class="rs">{{ number_format($items['closing_balance'] ?? 0, 2, '.', ',') }}</span>
+                            {{-- <span class="rs">00</span> --}}
+                            {{-- <span class="p">00</span> --}}
+                        </div>
+                    </td>
+                </tr>
+                <tr style="background: #f0f0f0; font-weight: bold;">
+                    <td class="date-col" style="text-align: center; padding-right: 8px;">{{ $items['closing_date']->format('d/m/y')}}</td>
+                    <td class="date-col" style="text-align: left; padding-right: 8px;">Closing Balance</td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                    
+                    <td class="balance-col">
+                        {{-- <div class="amount-split">
+                            <span class="rs">{{ number_format($items['closing_balance'] ?? 0, 2, '.', ',') }}</span>
+                        </div> --}}
+                    </td>
+                    <td>
+                    <div style="text-align: center; font-size: 9pt; margin-top: 2px;">
+                        {{-- {{ $closingBalanceType ?? 'Dr' }} --}}
+                    </div>
+
+                    </td>
+                    <td class="amount-col">
+                        <div class="amount-split">
+                            <span class="rs">{{ number_format($items['closing_balance'] ?? 0, 2, '.', ',') }}</span>
+                        </div>
+                    </td>
+                </tr>
+                @if ($index < $pages->count() - 1)
+                    <tr style="page-break-after: always;">
+                        <td colspan="8"></td>
                     </tr>
                 @endif
-            @empty
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 20px;">No entries yet.</td>
-                </tr>
-            @endforelse
-            <tr style="background: #f9f9f9; font-weight: bold;">
+                
+           
+            
+            {{-- <tr style="background: #f9f9f9; font-weight: bold;">
                 <td class="date-col" colspan="3" style="text-align: right; padding-right: 8px;">Total</td>
                 <td class="amount-col">
                     <div class="amount-split">
@@ -379,9 +465,10 @@
                         <span class="p">00</span>
                     </div>
                 </td>
-            </tr>
+            </tr> --}}
         </tbody>
     </table>
+     @endforeach
 
     <div class="decorative-border"></div>
 
