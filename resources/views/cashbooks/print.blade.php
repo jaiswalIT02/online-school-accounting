@@ -742,7 +742,8 @@
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>
                                 <td class="bank-col">
-                                @if ($paymentPage && ($paymentPage['closing']['bank'] ?? 0))
+                                       
+                                @if ($paymentPage)
                                         <div class="amount-split">
                                             <span class="rs">{{ number_format($paymentPage['closing']['bank'], 2, '.', ',') }}</span>
                                             {{-- <span class="p">00</span> --}}
@@ -750,7 +751,7 @@
                                     @endif
                                 </td>
                                 <td class="total-col">
-                                @if ($paymentPage && ($paymentPage['closing']['total'] ?? 0))
+                                @if ($paymentPage)
                                     <div class="amount-split">
                                         <span class="rs">{{ number_format($paymentPage['closing']['total'], 2, '.', ',') }}</span>
                                         {{-- <span class="p">00</span> --}}
