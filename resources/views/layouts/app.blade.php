@@ -55,30 +55,30 @@
                         </li>
 
                         @php
-                        $accountType = request('account_type', 1);
+                        $accountType = request('account_type', 3);
                         @endphp
 
-                        @if($accountType == 1)
+                        @if($accountType == 3)
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 1]) }}">
+                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 4]) }}">
                                 Receipt & Payment
                             </a>
                         </li>
                         @elseif($accountType == 2)
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt.create', ['account_type' => 2, 'id' => 4]) }}">
+                            <a class="nav-link" href="{{ route('receipt.create', ['account_type' => 4, 'id' => 4]) }}">
                                 Receipt
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('payment.create', ['account_type' => 2, 'id' => 4]) }}">
+                            <a class="nav-link" href="{{ route('payment.create', ['account_type' => 4, 'id' => 4]) }}">
                                 Payment
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 1]) }}">
+                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 3]) }}">
                                 Receipt&nbsp;&&nbsp;Payment
                             </a>
                         </li>

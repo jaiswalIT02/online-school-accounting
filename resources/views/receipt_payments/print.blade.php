@@ -34,13 +34,13 @@
         
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         }
         
         .header h1 {
             font-size: 16pt;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 1px;
             text-transform: uppercase;
         }
         
@@ -79,7 +79,7 @@
         .tables-container {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 5px;
             align-items: stretch;
         }
         
@@ -92,7 +92,7 @@
         
         .table-section-header {
             background: #e0e0e0;
-            padding: 8px;
+            padding: 2px;
             text-align: center;
             font-weight: bold;
             font-size: 12pt;
@@ -170,7 +170,7 @@
         
         table th {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 2px 2px;
             text-align: left;
             font-weight: bold;
             font-size: 10pt;
@@ -183,7 +183,7 @@
         
         table td {
             border: 1px solid #000;
-            padding: 2px 4px;
+            padding: 2px 2px;
             vertical-align: top;
             box-sizing: border-box;
         }
@@ -431,24 +431,24 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50%">Particulars</th>
-                        <th style="width: 25%">A. Code</th>
-                        <th style="width: 25%" class="text-right">Amount</th>
+                        <th style="width: 63%">Particulars</th>
+                        <th style="width: 20%">A. Code</th>
+                        <th style="width: 17%" class="text-right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="particular-name" style="width:50%">Opening Balance</td>
-                        <td style="width:25%">-</td>
-                        <td class="text-right" style="width:25%">-</td>
+                        <td class="particular-name" style="width:63%">Opening Balance</td>
+                        <td style="width:20%">-</td>
+                        <td class="text-right" style="width:17%">-</td>
                     </tr>
                     @forelse ($receipts as $entry)
                         <tr>
-                            <td style="width: 50%">
+                            <td style="width: 63%">
                                 <div class="particular-name">{{ $entry->current_particular_name }}</div>
                             </td>
-                            <td style="width:25%">{{ $entry->current_acode ?? '-' }}</td>
-                            <td class="text-right" style="width:25%">{{ number_format($entry->amount, 2) }}</td>
+                            <td style="width:20%">{{ $entry->current_acode ?? '-' }}</td>
+                            <td class="text-right" style="width:17%">{{ number_format($entry->amount, 2) }}</td>
                         </tr>
                     @empty
                         <tr>
@@ -456,9 +456,9 @@
                         </tr>
                     @endforelse
                     <tr>
-                        <td class="particular-name" style="width:50%">-</td>
-                        <td style="width:25%">-</td>
-                        <td class="text-right" style="width:25%">-</td>
+                        <td class="particular-name" style="width:63%">-</td>
+                        <td style="width:20%">-</td>
+                        <td class="text-right" style="width:17%">-</td>
                     </tr>
                 </tbody>
                 <tfoot>
@@ -478,24 +478,24 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50%">Particulars</th>
-                        <th style="width: 25%">A. Code</th>
-                        <th style="width: 25%" class="text-right">Amount</th>
+                        <th style="width: 63%">Particulars</th>
+                        <th style="width: 20%">A. Code</th>
+                        <th style="width: 17%" class="text-right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="particular-name" style="width:50%">.</td>
-                        <td style="width:25%"></td>
-                        <td class="text-right" style="width:25%"></td>
+                        <td class="particular-name" style="width:63%">-</td>
+                        <td style="width:20%">-</td>
+                        <td class="text-right" style="width:17%">-</td>
                     </tr>
                     @forelse ($payments as $entry)
                         <tr>
                             <td>
                                 <div class="particular-name">{{ $entry->current_particular_name }}</div>
                             </td>
-                            <td style="width:25%">{{ $entry->current_acode ?? '-' }}</td>
-                            <td class="text-right" style="width:25%">{{ number_format($entry->amount, 2) }}</td>
+                            <td style="width:20%">{{ $entry->current_acode ?? '-' }}</td>
+                            <td class="text-right" style="width:17%">{{ number_format($entry->amount, 2) }}</td>
                         </tr>
                     @empty
                         <tr>
@@ -503,9 +503,9 @@
                         </tr>
                     @endforelse
                         <tr>
-                            <td class="particular-name" style="width:50%">Closing Balance</td>
-                            <td style="width:25%"></td>
-                            <td class="text-right" style="width:25%">{{ number_format($closingValue, 2) }}</td>
+                            <td class="particular-name" style="width:63%">Closing Balance</td>
+                            <td style="width:20%">-</td>
+                            <td class="text-right" style="width:17%">{{ number_format($closingValue, 2) }}</td>
                         </tr>
                 </tbody>
                 <tfoot>

@@ -33,18 +33,17 @@ return new class extends Migration
             'cashbook_entries',
             'funds',
             'students',
-            'staff',
             'items',
-            'stocks',
             'stock_ledgers',
         ];
 
         foreach ($tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) {
                 $table->foreignId('session_year_id')
-                      ->constrained('session_years')
-                      ->cascadeOnUpdate()
-                      ->restrictOnDelete();
+                    ->nullable()
+                    ->constrained('session_years')
+                    ->cascadeOnUpdate()
+                    ->restrictOnDelete();
             });
         }
     }
@@ -64,9 +63,7 @@ return new class extends Migration
             'cashbook_entries',
             'funds',
             'students',
-            'staff',
             'items',
-            'stocks',
             'stock_ledgers',
         ];
 

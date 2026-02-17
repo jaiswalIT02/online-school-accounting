@@ -73,7 +73,6 @@ class ReceiptPaymentEntryController extends Controller
 
     public function store(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
-        // dd($request->toArray());
         $data = $this->validateEntry($request);
         $data['receipt_payment_account_id'] = $receipt_payment->id;
 

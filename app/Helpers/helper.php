@@ -26,6 +26,27 @@ function loadSessionYear()
     return $sessionYear;
 }
 
+// function loadSessionYear()
+// {
+//     $today = now()->toDateString(); // current date, e.g., 2026-02-17
+
+//     $sessionYear = SessionYear::select(
+//         'id',
+//         'session_name',
+//         'slug',
+//         'start_date',
+//         'end_date'
+//     )
+//         ->where('start_date', '<=', $today) // start date is in past or today
+//         ->where('end_date', '>=', $today)   // OR end date is still current
+//         ->orWhere('end_date', '<', $today)  // include past sessions
+//         ->orderBy('start_date', 'desc')
+//         ->get();
+
+//     return $sessionYear;
+// }
+
+
 function loadAccountType()
 {
     $accountType = AccountType::select(

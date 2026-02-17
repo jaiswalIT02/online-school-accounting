@@ -36,8 +36,7 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id', 1);
-
+        $session_filter = $request->get('session_id');
         $month = $request->input('month');
         $dateFromRaw = $request->input('date_from');
         $dateToRaw = $request->input('date_to');
@@ -113,9 +112,8 @@ class ReportController extends Controller
     /**
      * Get tax totals (P Tax and TDS) with date/month filters
      */
-    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
+    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter)
     {
-
         $query = ReceiptPaymentEntry::where('type', 'payment')
             ->where('session_year_id', $session_filter)
             ->whereNotNull('tax_amount')
@@ -154,10 +152,9 @@ class ReportController extends Controller
     /**
      * Get payment totals by article with date/month filters
      */
-    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
+    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null)
     {
         $query = ReceiptPaymentEntry::with('article')
-            ->where('session_year_id', $session_filter)
             ->where('type', 'payment');
 
         if ($articleId) {
@@ -236,7 +233,7 @@ class ReportController extends Controller
     /**
      * Apply date filters to query (preliminary filter for performance)
      */
-    private function applyDateFilters($query, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter = 1)
+    private function applyDateFilters($query, $year, $month = null, $dateFrom = null, $dateTo = null)
     {
         // If specific date range is provided, use it (takes priority)
         if ($dateFrom && $dateTo) {
@@ -255,13 +252,11 @@ class ReportController extends Controller
                         // Match date column (dd/mm/yyyy format)
                         $subQ->whereNotNull('date')
                             ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) >= DATE(?)", [$fromDate->format('Y-m-d')])
-                            ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) <= DATE(?)", [$toDate->format('Y-m-d')])
-                        ;
+                            ->whereRaw("DATE(STR_TO_DATE(date, '%d/%m/%Y')) <= DATE(?)", [$toDate->format('Y-m-d')]);
                     })->orWhere(function ($subQ) use ($fromDate, $toDate) {
                         // Fallback to created_at if date column is null
                         $subQ->whereNull('date')
-                            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()])
-                        ;
+                            ->whereBetween('created_at', [$fromDate->startOfDay(), $toDate->endOfDay()]);
                     });
                 });
             } catch (\Exception $e) {

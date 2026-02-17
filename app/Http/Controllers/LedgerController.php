@@ -7,7 +7,6 @@ use App\Models\Ledger;
 use App\Models\LedgerEntry;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
-use App\Models\SessionYear;
 use Illuminate\Http\Request;
 
 class LedgerController extends Controller

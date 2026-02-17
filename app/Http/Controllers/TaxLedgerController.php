@@ -10,9 +10,8 @@ class TaxLedgerController extends Controller
 {
     public function index()
     {
-        // Get all articles that have tax entries from PAYMENT type only
-        $articleIds = ReceiptPaymentEntry::where('type', 'payment')
-            ->whereNotNull('tax_amount')
+        // Get all articles that have tax entries (receipt or payment)
+        $articleIds = ReceiptPaymentEntry::whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for')
             ->whereNotNull('article_id')
@@ -30,10 +29,8 @@ class TaxLedgerController extends Controller
     {
         $article = Article::findOrFail($articleId);
 
-        // Get R&P entries with tax deductions for this article - ONLY PAYMENT type
-        // Order by id so we preserve storage order (receipt, payment, receipt, ...)
+        // Get R&P entries with tax deductions for this article (both receipt and payment)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where('type', 'payment')
             ->where('article_id', $articleId)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
@@ -41,28 +38,24 @@ class TaxLedgerController extends Controller
             ->orderBy('id')
             ->get();
 
-        $runningBalance = 0; // Tax ledger starts with 0 balance
+        $runningBalance = 0;
         $rows = [];
         $totalDebit = 0;
         $totalCredit = 0;
 
-        // Process tax entries (keep storage order: one by one receipt, payment, receipt...)
+        // Process: receipt = Credit side, payment = Debit side (ignore tax_type)
         $processedEntries = [];
         foreach ($rpeEntries as $rpeEntry) {
-            // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-            
-            // Check tax_type to determine debit or credit
-            // tax_type 'dr' = debit, 'cr' = credit
-            if ($rpeEntry->tax_type === 'dr') {
-                $debit = $rpeEntry->tax_amount;
-                $credit = 0;
-            } else {
-                // Default to credit if tax_type is 'cr' or null
+
+            if ($rpeEntry->type === 'receipt') {
                 $debit = 0;
                 $credit = $rpeEntry->tax_amount;
+            } else {
+                $debit = $rpeEntry->tax_amount;
+                $credit = 0;
             }
-            
+
             $taxParticulars = strtoupper($rpeEntry->tax_for) . ' - ' . $rpeEntry->current_particular_name;
             if ($rpeEntry->tax_remark) {
                 $taxParticulars .= ' (' . $rpeEntry->tax_remark . ')';
@@ -85,19 +78,7 @@ class TaxLedgerController extends Controller
             ];
         }
 
-        // Sort by entry_date (PPA date), then by id
-        usort($processedEntries, function ($a, $b) {
-            $dateCompare = $a['entry_date']->timestamp <=> $b['entry_date']->timestamp;
-            if ($dateCompare !== 0) {
-                return $dateCompare;
-            }
-            return $a['entry']->id <=> $b['entry']->id;
-        });
-
-        // Within each date, show Credit then Debit then Credit then Debit (alternating)
-        $processedEntries = $this->interleaveCreditsAndDebits($processedEntries);
-
-        // Calculate running balance
+        // Show data in same order as stored in database (orderBy id)
         foreach ($processedEntries as $item) {
             $entry = $item['entry'];
             $runningBalance += $entry->debit;
@@ -122,10 +103,8 @@ class TaxLedgerController extends Controller
     {
         $article = Article::findOrFail($articleId);
 
-        // Get R&P entries with tax deductions for this article - ONLY PAYMENT type
-        // Order by id so we preserve storage order (receipt, payment, receipt, ...)
+        // Get R&P entries with tax deductions for this article (both receipt and payment)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where('type', 'payment')
             ->where('article_id', $articleId)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
@@ -133,28 +112,24 @@ class TaxLedgerController extends Controller
             ->orderBy('id')
             ->get();
 
-        $runningBalance = 0; // Tax ledger starts with 0 balance
+        $runningBalance = 0;
         $rows = [];
         $totalDebit = 0;
         $totalCredit = 0;
 
-        // Process tax entries (keep storage order: one by one receipt, payment, receipt...)
+        // Process: receipt = Credit side, payment = Debit side (ignore tax_type)
         $processedEntries = [];
         foreach ($rpeEntries as $rpeEntry) {
-            // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-            
-            // Check tax_type to determine debit or credit
-            // tax_type 'dr' = debit, 'cr' = credit
-            if ($rpeEntry->tax_type === 'dr') {
-                $debit = $rpeEntry->tax_amount;
-                $credit = 0;
-            } else {
-                // Default to credit if tax_type is 'cr' or null
+
+            if ($rpeEntry->type === 'receipt') {
                 $debit = 0;
                 $credit = $rpeEntry->tax_amount;
+            } else {
+                $debit = $rpeEntry->tax_amount;
+                $credit = 0;
             }
-            
+
             $taxParticulars = strtoupper($rpeEntry->tax_for) . ' - ' . $rpeEntry->current_particular_name;
             if ($rpeEntry->tax_remark) {
                 $taxParticulars .= ' (' . $rpeEntry->tax_remark . ')';
@@ -177,19 +152,7 @@ class TaxLedgerController extends Controller
             ];
         }
 
-        // Sort by entry_date (PPA date), then by id
-        usort($processedEntries, function ($a, $b) {
-            $dateCompare = $a['entry_date']->timestamp <=> $b['entry_date']->timestamp;
-            if ($dateCompare !== 0) {
-                return $dateCompare;
-            }
-            return $a['entry']->id <=> $b['entry']->id;
-        });
-
-        // Within each date, show Credit then Debit then Credit then Debit (alternating)
-        $processedEntries = $this->interleaveCreditsAndDebits($processedEntries);
-
-        // Calculate running balance
+        // Show data in same order as stored in database (orderBy id)
         foreach ($processedEntries as $item) {
             $entry = $item['entry'];
             $runningBalance += $entry->debit;
@@ -245,47 +208,6 @@ class TaxLedgerController extends Controller
         // dd($pages);
 
         return view('tax_ledgers.print', compact('pages','article', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
-    }
-
-    /**
-     * Within each date, reorder entries to alternate: Credit, Debit, Credit, Debit, ...
-     */
-    private function interleaveCreditsAndDebits(array $processedEntries): array
-    {
-        $byDate = [];
-        foreach ($processedEntries as $item) {
-            $ts = $item['entry_date']->timestamp;
-            if (!isset($byDate[$ts])) {
-                $byDate[$ts] = [];
-            }
-            $byDate[$ts][] = $item;
-        }
-        ksort($byDate);
-
-        $result = [];
-        foreach ($byDate as $dateEntries) {
-            $credits = [];
-            $debits = [];
-            foreach ($dateEntries as $item) {
-                if ($item['entry']->credit > 0) {
-                    $credits[] = $item;
-                } else {
-                    $debits[] = $item;
-                }
-            }
-            usort($credits, fn ($a, $b) => $a['entry']->id <=> $b['entry']->id);
-            usort($debits, fn ($a, $b) => $a['entry']->id <=> $b['entry']->id);
-            $max = max(count($credits), count($debits));
-            for ($i = 0; $i < $max; $i++) {
-                if (isset($credits[$i])) {
-                    $result[] = $credits[$i];
-                }
-                if (isset($debits[$i])) {
-                    $result[] = $debits[$i];
-                }
-            }
-        }
-        return $result;
     }
 
     /**

@@ -6,25 +6,32 @@ use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
-use App\Models\SessionYear;
 use Illuminate\Http\Request;
 
 class CashbookController extends Controller
 {
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id', 1);
-        $account_type = $request->get('account_type', 1);
+        $query = Cashbook::query();
 
-        $cashbooks = Cashbook::where('session_year_id', $session_filter)
-            ->where('account_type_id', $account_type)
-            ->orderByDesc('period_year')
+        if ($request->filled('session_id')) {
+            $query->where('session_year_id', $request->session_id);
+        }
+
+        if ($request->filled('account_type')) {
+            $query->where('account_type_id', $request->account_type);
+        }
+
+        // dd($query->toSql(), $query->getBindings());
+
+        $cashbooks = $query->orderByDesc('period_year')
             ->orderBy('period_month')
             ->paginate(15)
             ->withQueryString();
 
         return view('cashbooks.index', compact('cashbooks'));
     }
+
 
     public function create()
     {

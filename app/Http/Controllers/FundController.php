@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Fund;
 use App\Services\FundImportService;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\ValidationException;
 
 class FundController extends Controller
@@ -17,17 +18,17 @@ class FundController extends Controller
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('component_name', 'like', "%{$search}%")
-                  ->orWhere('component_code', 'like', "%{$search}%")
-                  ->orWhere('remark', 'like', "%{$search}%");
+                    ->orWhere('component_code', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('component_name')) {
             $query->where('component_name', $request->component_name);
         }
-        
+
         if ($request->filled('component_code')) {
             $query->where('component_code', $request->component_code);
         }
@@ -76,9 +77,10 @@ class FundController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'fund_date' => ['nullable', 'string', 'max:10'],
-            'component_name' => ['nullable', 'string', 'max:200'],
-            'component_code' => ['nullable', 'string', 'max:100'],
+            'fund_date' => ['required', 'string', 'max:10'],
+            'component_name' => ['required', 'string', 'max:200'],
+            'component_type' => ['string', 'in:salary,non-salary'],
+            'component_code' => ['required', 'string', 'max:100'],
             'amount' => ['nullable', 'numeric', 'min:0'],
             'remark' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -101,6 +103,7 @@ class FundController extends Controller
             'fund_date' => ['nullable', 'string', 'max:10'],
             'component_name' => ['nullable', 'string', 'max:200'],
             'component_code' => ['nullable', 'string', 'max:100'],
+            'component_type' => ['string', 'in:salary,non-salary'],
             'amount' => ['nullable', 'numeric', 'min:0'],
             'remark' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -124,17 +127,21 @@ class FundController extends Controller
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('component_name', 'like', "%{$search}%")
-                  ->orWhere('component_code', 'like', "%{$search}%")
-                  ->orWhere('remark', 'like', "%{$search}%");
+                    ->orWhere('component_code', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('component_name')) {
             $query->where('component_name', $request->component_name);
         }
-        
+
+        $query->when($request->sub_component_name, function ($q) use ($request) {
+            $q->where('component_type', $request->sub_component_name);
+        });
+
         if ($request->filled('component_code')) {
             $query->where('component_code', $request->component_code);
         }
@@ -159,7 +166,7 @@ class FundController extends Controller
                 $month = $matches[2];
                 $year = $matches[3];
                 $dateFromFormatted = $year . $month . $day; // YYYYMMDD format for comparison
-                
+
                 // Convert stored dd/mm/yyyy to YYYYMMDD and compare
                 // fund_date format: dd/mm/yyyy -> extract year, month, day and convert to YYYYMMDD
                 $query->whereRaw("CONCAT(
@@ -178,7 +185,7 @@ class FundController extends Controller
                 $month = $matches[2];
                 $year = $matches[3];
                 $dateToFormatted = $year . $month . $day; // YYYYMMDD format for comparison
-                
+
                 // Convert stored dd/mm/yyyy to YYYYMMDD and compare
                 $query->whereRaw("CONCAT(
                     SUBSTRING_INDEX(fund_date, '/', -1),  -- Year (last part)
@@ -259,59 +266,33 @@ class FundController extends Controller
      */
     public function exportExcel(Request $request)
     {
-        $query = Fund::query();
-
-        // Apply filters from request
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('component_name', 'like', "%{$search}%")
-                  ->orWhere('component_code', 'like', "%{$search}%")
-                  ->orWhere('remark', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('component_name')) {
-            $query->where('component_name', $request->component_name);
-        }
-        
-        if ($request->filled('component_code')) {
-            $query->where('component_code', $request->component_code);
-        }
-
-        if ($request->filled('date_from')) {
-            $query->where('fund_date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where('fund_date', '<=', $request->date_to);
-        }
-
-        if ($request->filled('amount_from')) {
-            $query->where('amount', '>=', $request->amount_from);
-        }
-
-        if ($request->filled('amount_to')) {
-            $query->where('amount', '<=', $request->amount_to);
-        }
-
+        // Use the same filters as the "View All" screen, but fetch ALL rows (no pagination)
+        $query = $this->buildExportFilterQuery($request);
         $funds = $query->orderByDesc('fund_date')->orderByDesc('id')->get();
 
-        $filename = 'funds_' . date('Y-m-d_His') . '.csv';
+        // Allow UI to label this as CSV or Excel; content is CSV that Excel can open
+        $exportType = $request->get('type', 'excel'); // 'excel' or 'csv'
+        $suffix = $exportType === 'csv' ? 'csv' : 'excel';
+        $filename = 'funds_' . date('Y-m-d_His') . '_' . $suffix . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($funds) {
+        $callback = function () use ($funds) {
             $file = fopen('php://output', 'w');
-            
+
             // Add BOM for Excel UTF-8 support
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             // Headers
             fputcsv($file, [
-                'SL No', 'Date', 'Component Name', 'Component Code', 'Amount', 'Remark'
+                'SL No',
+                'Date',
+                'Component Name',
+                'Component Code',
+                'Amount',
+                'Remark'
             ]);
 
             // Data rows
@@ -333,4 +314,98 @@ class FundController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    /**
+     * Export funds to PDF (all filtered rows, ignoring pagination)
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->buildExportFilterQuery($request);
+        $funds = $query->orderByDesc('fund_date')->orderByDesc('id')->get();
+
+        $totalAmount = $funds->sum('amount');
+        $totalCount = $funds->count();
+        $averageAmount = $totalCount > 0 ? ($totalAmount / $totalCount) : 0;
+
+        $pdf = Pdf::loadView('funds.pdf', compact('funds', 'totalAmount', 'totalCount', 'averageAmount'));
+        return $pdf->download('funds_' . date('Y-m-d_His') . '.pdf');
+    }
+
+    /**
+     * Build filtered query for exports, mirroring the filters used in the View-All screen.
+     */
+    private function buildExportFilterQuery(Request $request)
+    {
+        $query = Fund::query();
+
+        // Text search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('component_name', 'like', "%{$search}%")
+                    ->orWhere('component_code', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('component_name')) {
+            $query->where('component_name', $request->component_name);
+        }
+
+        if ($request->filled('component_code')) {
+            $query->where('component_code', $request->component_code);
+        }
+
+        // Month-wise filter (by month only, across years) - fund_date stored as dd/mm/yyyy
+        if ($request->filled('month_only')) {
+            $month = str_pad($request->month_only, 2, '0', STR_PAD_LEFT);
+            $query->whereRaw(
+                "LPAD(SUBSTRING_INDEX(SUBSTRING_INDEX(fund_date, '/', 2), '/', -1), 2, '0') = ?",
+                [$month]
+            );
+        }
+
+        // Date range filtering - both input and stored format are dd/mm/yyyy.
+        // Convert to YYYYMMDD string for safe comparisons.
+        if ($request->filled('date_from')) {
+            $dateFrom = trim($request->date_from);
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dateFrom, $matches)) {
+                $day = $matches[1];
+                $month = $matches[2];
+                $year = $matches[3];
+                $dateFromFormatted = $year . $month . $day; // YYYYMMDD
+
+                $query->whereRaw("CONCAT(
+                    SUBSTRING_INDEX(fund_date, '/', -1),
+                    LPAD(SUBSTRING_INDEX(SUBSTRING_INDEX(fund_date, '/', 2), '/', -1), 2, '0'),
+                    LPAD(SUBSTRING_INDEX(fund_date, '/', 1), 2, '0')
+                ) >= ?", [$dateFromFormatted]);
+            }
+        }
+
+        if ($request->filled('date_to')) {
+            $dateTo = trim($request->date_to);
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dateTo, $matches)) {
+                $day = $matches[1];
+                $month = $matches[2];
+                $year = $matches[3];
+                $dateToFormatted = $year . $month . $day; // YYYYMMDD
+
+                $query->whereRaw("CONCAT(
+                    SUBSTRING_INDEX(fund_date, '/', -1),
+                    LPAD(SUBSTRING_INDEX(SUBSTRING_INDEX(fund_date, '/', 2), '/', -1), 2, '0'),
+                    LPAD(SUBSTRING_INDEX(fund_date, '/', 1), 2, '0')
+                ) <= ?", [$dateToFormatted]);
+            }
+        }
+
+        if ($request->filled('amount_from')) {
+            $query->where('amount', '>=', $request->amount_from);
+        }
+
+        if ($request->filled('amount_to')) {
+            $query->where('amount', '<=', $request->amount_to);
+        }
+
+        return $query;
+    }
 }

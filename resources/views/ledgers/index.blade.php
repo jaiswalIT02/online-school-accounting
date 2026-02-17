@@ -5,7 +5,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Ledgers</h4>
         <div class="d-flex gap-2">
-            
             <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#createAllLedgersModal">
                 <i class="bi bi-book"></i> Create All Ledgers from Activities
             </button>
@@ -14,7 +13,7 @@
     </div>
 
     @if (session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
+        <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
     <div class="card">
@@ -31,29 +30,29 @@
                     </thead>
                     <tbody>
                         @forelse ($ledgers as $ledger)
-                        <tr>
-                            <td>{{ $ledger->name }}</td>
-                            <td>
-                                {{ number_format($ledger->opening_balance, 2) }}
-                                {{ $ledger->opening_balance_type }}
-                            </td>
-                            <td>{{ $ledger->description ?? '-' }}</td>
-                            <td class="text-end">
-                                <a class="btn btn-sm btn-outline-primary" href="{{ route('ledgers.show', $ledger) }}">View</a>
-                                <a class="btn btn-sm btn-outline-secondary" href="{{ route('ledgers.edit', $ledger) }}">Edit</a>
-                                <form class="d-inline" method="POST" action="{{ route('ledgers.destroy', $ledger) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this ledger?')">
-                                        Delete
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td>{{ $ledger->name }}</td>
+                                <td>
+                                    {{ number_format($ledger->opening_balance, 2) }}
+                                    {{ $ledger->opening_balance_type }}
+                                </td>
+                                <td>{{ $ledger->description ?? '-' }}</td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('ledgers.show', $ledger) }}">View</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('ledgers.edit', $ledger) }}">Edit</a>
+                                    <form class="d-inline" method="POST" action="{{ route('ledgers.destroy', $ledger) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this ledger?')">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
                         @empty
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">No ledgers yet.</td>
-                        </tr>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No ledgers yet.</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -79,10 +78,10 @@
                 <div class="modal-body">
                     <p class="text-muted">This will create ledgers for all active components. Existing ledgers will be skipped.</p>
                     @if (session('ledger_error'))
-                    <div class="alert alert-danger">{{ session('ledger_error') }}</div>
+                        <div class="alert alert-danger">{{ session('ledger_error') }}</div>
                     @endif
                     @if (session('ledger_success'))
-                    <div class="alert alert-success">{{ session('ledger_success') }}</div>
+                        <div class="alert alert-success">{{ session('ledger_success') }}</div>
                     @endif
                 </div>
                 <div class="modal-footer">

@@ -15,6 +15,7 @@ class Fund extends Model
         'fund_date',
         'component_name',
         'component_code',
+        'component_type',
         'amount',
         'remark',
     ];

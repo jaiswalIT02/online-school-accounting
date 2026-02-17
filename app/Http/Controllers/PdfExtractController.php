@@ -140,8 +140,9 @@ class PdfExtractController extends Controller
                     continue;
                 }
                 
-                // If we see a transaction row (starts with digit + 8-9 digits), stop skipping header
-                if (preg_match('/^(\d)(\d{8,9})/', $line)) {
+                // If we see a transaction row (starts with Sl No + Txn ID), stop skipping header
+                // Allow optional spaces between Sl No and Txn ID, and support multi-digit Sl No
+                if (preg_match('/^(\d+)\s*(\d{8,9})/', $line)) {
                     $skippingHeader = false;
                     $inTable = true;
                     // Don't continue, process this line below
@@ -173,9 +174,12 @@ class PdfExtractController extends Controller
                     continue;
                 }
                 
-                // Check if line starts with SlNo (1 digit) followed immediately by TxnID (8-9 digits)
-                // Pattern: "132937165" or "232937166HEMANTA"
-                if (preg_match('/^(\d)(\d{8,9})(.*)$/', $line, $slMatches)) {
+                // Check if line starts with Sl No followed by Txn ID (8-9 digits)
+                // Allow optional spaces between Sl No and Txn ID, and support multi-digit Sl No
+                // Examples:
+                // "1 37142811RAKESH KUMAR ..."
+                // "12 37142811 RAKESH KUMAR ..."
+                if (preg_match('/^(\d+)\s*(\d{8,9})(.*)$/', $line, $slMatches)) {
                     // Save previous entry if exists
                     if ($currentEntry !== null) {
                         $this->saveCurrentEntry($currentEntry, $beneficiaries, $metadata);
@@ -197,8 +201,8 @@ class PdfExtractController extends Controller
                     ];
                     
                     // Check if this line also contains account/IFSC/amount (single line entry)
-                    // Pattern: account (with x's) + IFSC + amount (all concatenated)
-                    if (preg_match('/([xX\d]{10,20})([A-Z]{4}0[A-Z0-9]{6})(\d+(?:\.\d{2})?)/', $remaining, $dataMatches)) {
+                    // Pattern: account (with x's, may contain spaces) + IFSC + amount (allow optional spaces between)
+                    if (preg_match('/([xX\d\s]{10,25})\s*([A-Z]{4}0[A-Z0-9]{6})\s*(\d+(?:\.\d{2})?)/', $remaining, $dataMatches)) {
                         // Extract name before account number
                         $accountPos = strpos($remaining, $dataMatches[1]);
                         $nameSection = trim(substr($remaining, 0, $accountPos));
@@ -232,8 +236,8 @@ class PdfExtractController extends Controller
                     }
                     
                     // Try to find account number, IFSC, and amount in this line
-                    // Pattern: account (with x's) + IFSC + amount (may be concatenated)
-                    if (preg_match('/([xX\d]{10,20})([A-Z]{4}0[A-Z0-9]{6})(\d+(?:\.\d{2})?)/', $line, $dataMatches)) {
+                    // Pattern: account (with x's, may contain spaces) + IFSC + amount (allow optional spaces between)
+                    if (preg_match('/([xX\d\s]{10,25})\s*([A-Z]{4}0[A-Z0-9]{6})\s*(\d+(?:\.\d{2})?)/', $line, $dataMatches)) {
                         $currentEntry['account_no'] = preg_replace('/[^0-9]/', '', $dataMatches[1]);
                         $currentEntry['ifsc'] = trim($dataMatches[2]);
                         $currentEntry['amount'] = floatval(str_replace(',', '', $dataMatches[3]));

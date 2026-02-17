@@ -44,29 +44,11 @@ Route::middleware('auth')->group(function () {
     Route::get('funds/import', [FundController::class, 'import'])->name('funds.import');
     Route::post('funds/import', [FundController::class, 'processImport'])->name('funds.processImport');
     Route::get('funds/export/excel', [FundController::class, 'exportExcel'])->name('funds.export.excel');
+    Route::get('funds/export/pdf', [FundController::class, 'exportPdf'])->name('funds.export.pdf');
     Route::resource('funds', FundController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('funds/view-all', [FundController::class, 'show'])->name('funds.view_all');
     Route::resource('receipt-payments', ReceiptPaymentAccountController::class)
         ->names('receipt_payments');
-    // Route::get('/receipt', [ReceiptPaymentAccountController::class, 'receiptCreate'])->name('receipt.create');
-    // Route::resource('/receipt', ReceiptPaymentAccountController::class)
-    //     ->only(['createreceipt', 'storereceipt'])
-    //     ->names([
-    //         'create' => 'receipt.create',
-    //         'store' => 'receipt.store',
-    //     ]);
-    Route::get('/receipt/create/{id}', [ReceiptPaymentEntryController::class, 'createReceipt'])
-        ->name('receipt.create');
-    Route::post('/receipt/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
-        ->name('receipt.store');
-
-    Route::get('/payment/create/{id}', [ReceiptPaymentEntryController::class, 'createPayment'])
-        ->name('payment.create');
-
-    Route::post('/payment/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
-        ->name('payment.store');
-
-    Route::get('/payments', [ReceiptPaymentAccountController::class, 'index'])->name('payments.index');
     Route::get('receipt-payments/{receipt_payment}/print', [ReceiptPaymentAccountController::class, 'print'])
         ->name('receipt_payments.print');
     Route::post('receipt-payments/{receipt_payment}/create-cashbook', [ReceiptPaymentAccountController::class, 'createCashbook'])
@@ -79,6 +61,18 @@ Route::middleware('auth')->group(function () {
         ]);
 
     // Bulk routes must come before {entry} routes so "bulk-edit" / "bulk-update" are not matched as entry IDs
+    Route::get('/receipt/create/{id}', [ReceiptPaymentEntryController::class, 'createReceipt'])
+        ->name('receipt.create');
+    Route::post('/receipt/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
+        ->name('receipt.store');
+
+    Route::get('/payment/create/{id}', [ReceiptPaymentEntryController::class, 'createPayment'])
+        ->name('payment.create');
+
+    Route::post('/payment/store/{receipt_payment}', [ReceiptPaymentEntryController::class, 'store'])
+        ->name('payment.store');
+
+    Route::get('/payments', [ReceiptPaymentAccountController::class, 'index'])->name('payments.index');
     Route::post('receipt-payment-entries/bulk-destroy', [ReceiptPaymentEntryController::class, 'bulkDestroy'])
         ->name('receipt_payment_entries.bulk_destroy');
     Route::get('receipt-payment-entries/bulk-edit', [ReceiptPaymentEntryController::class, 'bulkEdit'])

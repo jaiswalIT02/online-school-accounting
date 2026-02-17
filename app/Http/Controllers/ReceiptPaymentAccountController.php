@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Article;
-use App\Models\Beneficiary;
 use App\Models\Cashbook;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
@@ -21,6 +19,7 @@ class ReceiptPaymentAccountController extends Controller
 
         return view('receipt_payments.index', compact('accounts'));
     }
+
 
     public function create()
     {
@@ -47,7 +46,6 @@ class ReceiptPaymentAccountController extends Controller
 
     public function show(ReceiptPaymentAccount $receipt_payment)
     {
-
         $entries = $receipt_payment->entries()
             ->with(['article', 'beneficiary'])
             ->orderByDesc('id')
