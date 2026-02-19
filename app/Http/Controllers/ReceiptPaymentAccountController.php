@@ -13,8 +13,8 @@ class ReceiptPaymentAccountController extends Controller
 {
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id', 1);
-        $account_type = $request->get('account_type', 1);
+        $session_filter = $request->get('session_id');
+        $account_type = $request->get('account_type');
         $accounts = ReceiptPaymentAccount::where('session_year_id', $session_filter)->where('account_type_id', $account_type)->orderByDesc('period_from')->paginate(15);
 
         return view('receipt_payments.index', compact('accounts'));

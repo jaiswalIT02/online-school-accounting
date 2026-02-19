@@ -127,7 +127,7 @@
                         value="{{ request('amount_to') }}"
                         placeholder="Max">
                 </div>
-                <div class="col-md-2 d-flex align-items-end gap-2">
+                <div class="col-md-2 d-flex align-items-center gap-2">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                     <a href="{{ route('funds.view_all') }}" class="btn btn-outline-secondary w-100">Clear</a>
                 </div>

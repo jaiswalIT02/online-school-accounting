@@ -64,7 +64,7 @@
                                 Receipt & Payment
                             </a>
                         </li>
-                        @elseif($accountType == 2)
+                        @elseif($accountType == 4)
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('receipt.create', ['account_type' => 4, 'id' => 4]) }}">
                                 Receipt
