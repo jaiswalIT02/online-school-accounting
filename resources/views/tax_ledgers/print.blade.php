@@ -205,14 +205,21 @@
         <button onclick="window.close()">Close</button>
     </div>
 
-    <div class="ledger-header">
+    {{-- <div class="ledger-header">
         <div class="ledger-title">
             <span class="label">TAX LEDGER A/C. of</span>
             <span class="account-name">{{ $article->name }}</span>
         </div>
         <div class="page-number">1</div>
-    </div>
+    </div> --}}
     @foreach($pages as $index => $items)
+    <div class="ledger-header">
+        <div class="ledger-title">
+            <span class="label">TAX LEDGER A/C. of</span>
+            <span class="account-name">{{ $article->name }}</span>
+        </div>
+        <div class="page-number">{{ $index + 1 }}</div>
+    </div>
     <table class="ledger-table">
         <thead>
             <tr>
@@ -245,7 +252,7 @@
         </thead>
         <tbody>
             <tr style="background: #f0f0f0; font-weight: bold;">
-                <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                <td class="date-col" style="text-align: center; padding-right: 8px;">{{ $items['opening_date']->format('d/m/y')}}</td>
                 <td class="date-col"  style="text-align: center; padding-right: 8px;">Opening Balance</td>
                 <td class="date-col"  style="text-align: right; padding-right: 8px;"></td>
                 <td class="date-col"  style="text-align: right; padding-right: 8px;"></td>
@@ -334,7 +341,7 @@
                 </td>
             </tr>
             <tr style="background: #f0f0f0; font-weight: bold;">
-                <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                <td class="date-col" style="text-align: center; padding-right: 8px;">{{ $items['closing_date']->format('d/m/y')}}</td>
                 <td class="date-col"  style="text-align: center; padding-right: 8px;">Closing Balance</td>
                 <td class="date-col"  style="text-align: right; padding-right: 8px;"></td>
                 <td class="date-col"  style="text-align: right; padding-right: 8px;"></td>

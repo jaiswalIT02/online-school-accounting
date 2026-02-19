@@ -376,13 +376,13 @@
     @endphp
     <div class="cashbook-header">
                
-                <div class="cashbook-title">CASH BOOK</div>
+            {{-- <div class="cashbook-title">CASH BOOK</div>
                
             </div>
 
             <div class="period-info">
                 {{ strtoupper($cashbook->period_month) }} {{ $cashbook->period_year }}
-            </div>
+            </div> --}}
 
     @for ($pageIndex = 0; $pageIndex < $maxPages; $pageIndex++)
         @php
@@ -391,6 +391,13 @@
             $currentPageNumber = $pageIndex + 1;
             $isLastPage = $currentPageNumber === $maxPages;
         @endphp
+        <div class="cashbook-title">CASH BOOK</div>
+               
+            </div>
+
+            <div class="period-info">
+                {{ strtoupper($cashbook->period_month) }} {{ $cashbook->period_year }}
+            </div>
 
         <div class="{{ $isLastPage ? '' : 'page-break' }}">
             {{-- HEADER --}}
@@ -705,9 +712,9 @@
                             </tr> -->
                             {{-- CLOSING BALANCE BOX - ALWAYS AT BOTTOM --}}
                             <tr>
-                                <td class="date-col" style="text-align: left; padding-left: 6px;">Total Payment</td>
+                                <td class="date-col" style="text-align: left; padding-left: 6px;"></td>
                                 <td class="voucher-col"></td>
-                                <td class="particular-col"></td>
+                                <td class="particular-col" style="text-align:left;">Total Payment</td>
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>
                                 <td class="bank-col">
@@ -737,7 +744,9 @@
                                 </td>
                                 <td class="voucher-col"></td>
                                 <td class="particulars-col">
-                                    <span class="particulars-text">Closing Balance</span>
+                                    {{-- <span class="particulars-text"> --}}
+                                        Closing Balance
+                                    {{-- </span> --}}
                                 </td>
                                 <td class="amount-col"></td>
                                 <td class="folio-col"></td>

@@ -215,6 +215,18 @@
         <button onclick="window.close()">Close</button>
     </div>
 
+    {{-- <div class="ledger-header">
+        <div class="ledger-title">
+            <span class="label">LEDGER A/C. of</span>
+            <span class="account-name">{{ $ledger->name }}</span>
+        </div>
+    </div> --}}
+    
+    {{-- <div class="page-number">11</div> --}}
+    @php
+        $pageNumber = 1;
+    @endphp
+    @foreach($pages as $index => $items)
     <div class="ledger-header">
         <div class="ledger-title">
             <span class="label">LEDGER A/C. of</span>
@@ -222,11 +234,6 @@
         </div>
         {{-- <div class="page-number">11</div> --}}
     </div>
-
-    @php
-        $pageNumber = 1;
-    @endphp
-    @foreach($pages as $index => $items)
     <table class="ledger-table">
         <thead>
             <tr>
@@ -370,7 +377,9 @@
                 @endforelse
                 
                 <tr style="background: #f9f9f9; font-weight: bold;">
-                    <td class="date-col" colspan="3" style="text-align: right; padding-right: 8px;">Total</td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
+                    <td class="date-col" style="text-align: left; padding-right: 8px;">Total</td>
+                    <td class="date-col" style="text-align: right; padding-right: 8px;"></td>
                     <td class="amount-col">
                         <div class="amount-split">
                             <span class="rs">{{ number_format($items['total_debit'] ?? 0, 2, '.', ',') }}</span>

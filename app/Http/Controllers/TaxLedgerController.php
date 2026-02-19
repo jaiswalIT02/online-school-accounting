@@ -171,7 +171,7 @@ class TaxLedgerController extends Controller
         $closingBalance = abs($runningBalance);
         $closingBalanceType = $runningBalance < 0 ? 'Cr' : 'Dr';
 
-        $pages = collect($rows)->chunk(2);
+        $pages = collect($rows)->chunk(8);
 
         $pages = collect($pages); // assuming $pages is already a collection or array of chunks
 
@@ -200,6 +200,8 @@ class TaxLedgerController extends Controller
                 'entries' => $entries, // ✅ keep your rows here
                 'total_debit' => $totalDebit,
                 'total_credit' => $totalCredit,
+                'opening_date' => $entries->first()['entry']->entry_date ?? null,
+                'closing_date' => $entries->last()['entry']->entry_date ?? null,
                 'closing_balance' => $closingBalance,
                 'opening_balance' => $openingBalance,
                 'page_number' => $index + 1,

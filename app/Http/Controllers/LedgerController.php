@@ -229,7 +229,7 @@ class LedgerController extends Controller
 
         $closingBalance = abs($runningBalance);
         $closingBalanceType = $runningBalance < 0 ? 'Cr' : 'Dr';
-        $pages = collect($rows)->chunk(10);
+        $pages = collect($rows)->chunk(9);
 
         $pages = collect($pages); // assuming $pages is already a collection or array of chunks
 
