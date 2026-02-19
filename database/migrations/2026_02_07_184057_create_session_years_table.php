@@ -33,7 +33,6 @@ return new class extends Migration
             'cashbook_entries',
             'funds',
             'students',
-            'items',
             'stock_ledgers',
         ];
 
@@ -63,7 +62,6 @@ return new class extends Migration
             'cashbook_entries',
             'funds',
             'students',
-            'items',
             'stock_ledgers',
         ];
 

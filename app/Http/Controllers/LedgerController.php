@@ -13,8 +13,8 @@ class LedgerController extends Controller
 {
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id', 1);
-        $account_type = $request->get('account_type', 1);
+        $session_filter = $request->get('session_id', current_session_year_id());
+        $account_type = $request->get('account_type', 3);
 
         $ledgers = Ledger::where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
