@@ -76,7 +76,7 @@
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('payment.create') }}">
+                            <a class="nav-link" href="{{ route('payment.create', ['account_type' => $accountType, 'id' => $accountType]) }}">
                                 Payment
                             </a>
                         </li>
