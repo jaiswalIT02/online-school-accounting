@@ -56,16 +56,16 @@
                         </li>
 
                         @php
-                        $accountType = request('account_type', 3);
+                        $accountType = request('account_type', current_account_type_id());
                         @endphp
 
-                        @if($accountType == 3)
+                        @if($accountType == 1)
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('receipt_payments.index') }}">
                                 Receipt & Payment
                             </a>
                         </li>
-                        @elseif($accountType == 4)
+                        @elseif($accountType == 2)
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('receipt.create') }}">
                                 Receipt
