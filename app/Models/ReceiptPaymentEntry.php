@@ -9,6 +9,8 @@ use App\Models\Traits\HasSessionYear;
 use App\Services\ReceiptPaymentSyncService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ReceiptPaymentEntry extends Model
 {
@@ -59,6 +61,18 @@ class ReceiptPaymentEntry extends Model
             $syncService = app(ReceiptPaymentSyncService::class);
             $syncService->removeFromCashbooks($entry);
             $syncService->removeFromLedgers($entry);
+        });
+
+        static::addGlobalScope('school', function (Builder $builder) {
+            if (Auth::check()) {
+                $builder->where('school_id', Auth::user()->school_id);
+            }
+        });
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->school_id = Auth::user()->school_id;
+            }
         });
     }
 

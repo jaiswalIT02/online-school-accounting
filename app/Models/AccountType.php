@@ -11,6 +11,7 @@ class AccountType extends Model
         'slug',
         'description',
         'status',
+        'school_id',
     ];
 
     public function scopeBySlug($query, string $slug)

@@ -8,18 +8,19 @@ use App\Models\LedgerEntry;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class LedgerController extends Controller
 {
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id', current_session_year_id());
-        $account_type = $request->get('account_type', 3);
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
 
         $ledgers = Ledger::where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
-            ->paginate(15)
-            ->withQueryString();
+            ->paginate(15);
 
         return view('ledgers.index', compact('ledgers', 'session_filter'));
     }
@@ -32,14 +33,30 @@ class LedgerController extends Controller
 
     public function store(Request $request)
     {
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
+
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120', 'unique:ledgers,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::unique('ledgers', 'name')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('school_id', auth()->user()->school_id)
+                            ->where('session_year_id', session('session_id'))
+                            ->where('account_type_id', session('account_type'));
+                    }),
+            ],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'opening_balance_type' => ['required', 'in:Dr,Cr'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $data['opening_balance'] = $data['opening_balance'] ?? 0;
+        $data['account_type'] = $data['opening_balance'] ?? 0;
+        $data['account_type_id'] = $account_type;
+        $data['session_year_id'] = $session_year;
 
         // Convert string fields to uppercase
         if (isset($data['name'])) $data['name'] = strtoupper($data['name']);
@@ -130,8 +147,23 @@ class LedgerController extends Controller
 
     public function update(Request $request, Ledger $ledger)
     {
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
+
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120', 'unique:ledgers,name,' . $ledger->id],
+            'name' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::unique('ledgers', 'name')
+                    ->ignore($ledger->id)
+                    ->where(
+                        fn($query) =>
+                        $query->where('school_id', auth()->user()->school_id)
+                            ->where('session_year_id', $session_year)
+                            ->where('account_type_id', $account_type)
+                    ),
+            ],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'opening_balance_type' => ['required', 'in:Dr,Cr'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -148,6 +180,12 @@ class LedgerController extends Controller
 
     public function destroy(Ledger $ledger)
     {
+        $school_id = Auth::user()->school_id;
+
+        if ($ledger->school_id !== $school_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $ledger->delete();
 
         return redirect()
@@ -161,13 +199,13 @@ class LedgerController extends Controller
         // Normal entries: have amount > 0
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
-            ->where(function($query) use ($ledger) {
-                $query->whereHas('article', function($q) use ($ledger) {
+            ->where(function ($query) use ($ledger) {
+                $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
                 })
-                ->orWhereHas('beneficiary', function($q) use ($ledger) {
-                    $q->where('name', $ledger->name);
-                });
+                    ->orWhereHas('beneficiary', function ($q) use ($ledger) {
+                        $q->where('name', $ledger->name);
+                    });
             })
             ->where('amount', '>', 0) // Only entries with actual amount
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
@@ -195,13 +233,13 @@ class LedgerController extends Controller
         foreach ($rpeEntries as $rpeEntry) {
             // Extract PPA date from date column, then remarks, fallback to created_at
             $entryDate = $this->getEntryDate($rpeEntry);
-            
+
             // Receipt entries: amount on credit side, balance type Cr
             // Payment entries: amount on debit side, balance type Dr
             $credit = $rpeEntry->type === 'receipt' ? $rpeEntry->amount : 0;
             $debit = $rpeEntry->type === 'payment' ? $rpeEntry->amount : 0;
             $balanceType = $rpeEntry->type === 'receipt' ? 'Cr' : 'Dr';
-            
+
             // Calculate running balance
             $runningBalance += $debit;
             $runningBalance -= $credit;
@@ -270,7 +308,7 @@ class LedgerController extends Controller
 
         // dd($pages);
 
-        return view('ledgers.print', compact('pages','ledger', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
+        return view('ledgers.print', compact('pages', 'ledger', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
     }
 
     public function import(Ledger $ledger)
@@ -426,7 +464,6 @@ class LedgerController extends Controller
 
     public function createAllFromActivities()
     {
-        // Get all Articles (activities)
         $articles = Article::where('status', 1)->orderBy('name')->get();
 
         if ($articles->isEmpty()) {
@@ -437,22 +474,30 @@ class LedgerController extends Controller
 
         $createdCount = 0;
         $skippedCount = 0;
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
 
         foreach ($articles as $article) {
-            // Check if ledger already exists for this article
-            $existingLedger = Ledger::where('name', $article->name)->first();
 
-            if ($existingLedger) {
+            $exists = Ledger::where('name', $article->name)
+                ->where('school_id', auth()->user()->school_id)
+                ->where('session_year_id', $session_year)
+                ->where('account_type_id', $account_type)
+                ->exists();
+
+            if ($exists) {
                 $skippedCount++;
                 continue;
             }
 
-            // Create new ledger from article
             Ledger::create([
                 'name' => $article->name,
                 'opening_balance' => 0,
                 'opening_balance_type' => 'Dr',
                 'description' => 'Auto-created from Activity: ' . $article->acode,
+                'account_type_id' => $account_type,
+                'session_year_id' => $session_year,
+                'school_id' => auth()->user()->school_id,
             ]);
 
             $createdCount++;

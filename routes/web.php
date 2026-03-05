@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\CashbookController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\TaxLedgerController;
 use App\Http\Controllers\PdfExtractController;
 use App\Http\Controllers\ReceiptPaymentAccountController;
 use App\Http\Controllers\ReceiptPaymentEntryController;
+use App\Http\Controllers\SessionYearController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +31,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
+    Route::post('/account-selection', [SessionYearController::class, 'storeAccountSelect'])
+        ->name('account.selection');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -59,6 +65,15 @@ Route::middleware('auth')->group(function () {
             'create' => 'receipt_payment_entries.create',
             'store' => 'receipt_payment_entries.store',
         ]);
+
+
+    Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
+    Route::get('/accounts/create', [AccountController::class, 'create'])->name('accounts.create');
+    Route::post('/accounts/store', [AccountController::class, 'store'])->name('accounts.store');
+    Route::get('/accounts/show/{id}', [AccountController::class, 'show'])->name('accounts.show');
+    Route::get('/accounts/edit', [AccountController::class, 'edit'])->name('accounts.edit');
+    Route::get('/accounts/update', [AccountController::class, 'update'])->name('accounts.update');
+    Route::get('/accounts/destroy', [AccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Bulk routes must come before {entry} routes so "bulk-edit" / "bulk-update" are not matched as entry IDs
     Route::get('/receipt/create/{id}', [ReceiptPaymentEntryController::class, 'createReceipt'])
@@ -109,8 +124,9 @@ Route::middleware('auth')->group(function () {
         ->name('cashbook_entries.update');
     Route::delete('cashbook-entries/{entry}', [CashbookEntryController::class, 'destroy'])
         ->name('cashbook_entries.destroy');
-
-    Route::resource('ledgers', LedgerController::class);
+    Route::middleware(['account.selection'])->group(function () {
+        Route::resource('ledgers', LedgerController::class);
+    });
     Route::get('ledgers/{ledger}/print', [LedgerController::class, 'print'])
         ->name('ledgers.print');
     Route::get('ledgers/{ledger}/import', [LedgerController::class, 'import'])

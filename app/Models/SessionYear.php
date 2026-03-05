@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class SessionYear extends Model
 {
@@ -17,5 +19,20 @@ class SessionYear extends Model
     public function scopeBySlug($query, string $slug)
     {
         return $query->where('slug', $slug);
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('school', function (Builder $builder) {
+            if (Auth::check()) {
+                $builder->where('school_id', Auth::user()->school_id);
+            }
+        });
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->school_id = Auth::user()->school_id;
+            }
+        });
     }
 }

@@ -8,7 +8,8 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'KGBVDKJ') }}</title>
+    <title>{{ Auth::user()->school->name ?? 'Online Accounting Service' }}</title>
+    <!-- <title>{{ config('app.name', 'KGBVDKJ') }}</title> -->
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
@@ -31,7 +32,7 @@
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    {{ config('app.name', 'KGBVDKJ') }}
+                    {{ Auth::user()->school->name ?? 'Online A/C Service' }}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                     <span class="navbar-toggler-icon"></span>
@@ -60,25 +61,25 @@
 
                         @if($accountType == 3)
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 4]) }}">
+                            <a class="nav-link" href="{{ route('receipt_payments.index') }}">
                                 Receipt & Payment
                             </a>
                         </li>
                         @elseif($accountType == 4)
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt.create', ['account_type' => 4, 'id' => 4]) }}">
+                            <a class="nav-link" href="{{ route('receipt.create') }}">
                                 Receipt
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('payment.create', ['account_type' => 4, 'id' => 4]) }}">
+                            <a class="nav-link" href="{{ route('payment.create') }}">
                                 Payment
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => 3]) }}">
+                            <a class="nav-link" href="{{ route('receipt_payments.index') }}">
                                 Receipt&nbsp;&&nbsp;Payment
                             </a>
                         </li>
@@ -115,7 +116,7 @@
                     <ul class="navbar-nav ms-auto">
 
                         @auth
-                        <form method="GET" action="{{ url()->current() }}" class="d-flex">
+                        <!-- <form method="GET" action="{{ url()->current() }}" class="d-flex">
 
                             <select name="account_type"
                                 id="account_type"
@@ -137,13 +138,101 @@
 
                                 @foreach ($sessionYear as $year)
                                 <option value="{{ $year->id }}"
-                                    {{ request('session_id') == $year->id ? 'selected' : '' }}>
+                                    {{ session('session_id') == $year->id ? 'selected' : '' }}>
                                     {{ $year->session_name }}
                                 </option>
                                 @endforeach
                             </select>
 
+                        </form> -->
+                        <!-- <form method="GET" action="{{ url()->current() }}" class="d-flex">
+
+                            {{-- Preserve all existing query params except the ones we are replacing --}}
+                            @foreach(request()->except(['account_type', 'session_id']) as $key => $value)
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+
+                            <select name="account_type"
+                                id="account_type"
+                                class="form-control me-2"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($loadAccountType as $account)
+                                <option value="{{ $account->id }}"
+                                    {{ request('account_type', 3) == $account->id ? 'selected' : '' }}>
+                                    {{ $account->name }}
+                                </option>
+                                @endforeach
+                            </select>
+
+                            <select name="session_id"
+                                id="session_id"
+                                class="form-control"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($sessionYear as $year)
+                                <option value="{{ $year->id }}"
+                                    {{ session('session_id') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->session_name }}
+                                </option>
+                                @endforeach
+                            </select>
+
+                        </form> -->
+                        <form method="POST" action="{{ route('account.selection') }}" class="d-flex">
+                            @csrf
+
+                            <select name="account_type"
+                                class="form-control me-2"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($loadAccountType as $account)
+                                <option value="{{ $account->id }}"
+                                    {{ session('account_type', 3) == $account->id ? 'selected' : '' }}>
+                                    {{ $account->name }}
+                                </option>
+                                @endforeach
+                            </select>
+
+                            <select name="session_id"
+                                class="form-control"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($sessionYear as $year)
+                                <option value="{{ $year->id }}"
+                                    {{ session('session_id') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->session_name }}
+                                </option>
+                                @endforeach
+                            </select>
                         </form>
+                        <!-- <form method="GET" action="{{ url()->current() }}" class="d-flex">
+
+                            <select name="account_type"
+                                class="form-control me-2"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($loadAccountType as $account)
+                                <option value="{{ $account->id }}"
+                                    {{ session('account_type', 3) == $account->id ? 'selected' : '' }}>
+                                    {{ $account->name }}
+                                </option>
+                                @endforeach
+                            </select>
+
+                            <select name="session_id"
+                                class="form-control"
+                                onchange="this.form.submit()" style="width: 120px;">
+
+                                @foreach ($sessionYear as $year)
+                                <option value="{{ $year->id }}"
+                                    {{ session('session_id') == $year->id ? 'selected' : '' }}>
+                                    {{ $year->session_name }}
+                                </option>
+                                @endforeach
+                            </select>
+
+                        </form> -->
                         @endauth
 
                         @guest

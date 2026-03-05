@@ -6,6 +6,8 @@ use App\Models\Traits\AutoAssignSessionYear;
 use App\Models\Traits\HasSessionYear;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class Student extends Model
 {
@@ -66,12 +68,12 @@ class Student extends Model
         if (empty($value)) {
             return $value;
         }
-        
+
         // If already in dd-mm-yyyy format, return as is
         if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $value)) {
             return $value;
         }
-        
+
         // If in Y-m-d format, convert to d-m-Y
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             try {
@@ -80,7 +82,7 @@ class Student extends Model
                 return $value;
             }
         }
-        
+
         return $value;
     }
 
@@ -92,12 +94,12 @@ class Student extends Model
         if (empty($value)) {
             return $value;
         }
-        
+
         // If already in dd-mm-yyyy format, return as is
         if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $value)) {
             return $value;
         }
-        
+
         // If in Y-m-d format, convert to d-m-Y
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             try {
@@ -106,7 +108,7 @@ class Student extends Model
                 return $value;
             }
         }
-        
+
         return $value;
     }
 
@@ -118,12 +120,12 @@ class Student extends Model
         if (empty($value)) {
             return $value;
         }
-        
+
         // If already in dd-mm-yyyy format, return as is
         if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $value)) {
             return $value;
         }
-        
+
         // If in Y-m-d format, convert to d-m-Y
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             try {
@@ -132,7 +134,22 @@ class Student extends Model
                 return $value;
             }
         }
-        
+
         return $value;
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('school', function (Builder $builder) {
+            if (Auth::check()) {
+                $builder->where('school_id', Auth::user()->school_id);
+            }
+        });
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->school_id = Auth::user()->school_id;
+            }
+        });
     }
 }

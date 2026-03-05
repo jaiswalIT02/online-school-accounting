@@ -258,7 +258,7 @@
         </div>
         @if($funds->hasPages())
         <div class="card-footer">
-            {{ $funds->links() }}
+            {{ $funds->withQueryString()->links() }}
         </div>
         @endif
     </div>

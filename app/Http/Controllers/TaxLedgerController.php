@@ -8,16 +8,30 @@ use Illuminate\Http\Request;
 
 class TaxLedgerController extends Controller
 {
+    protected $session_filter;
+    protected $account_type;
+
+    public function __construct()
+    {
+        $this->session_filter = session('session_id', current_session_year_id());
+        $this->account_type   = session('account_type', current_account_type_id());
+    }
+
     public function index()
     {
         // Get all articles that have tax entries (receipt or payment)
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type = session('account_type', current_account_type_id());
+
         $articleIds = ReceiptPaymentEntry::whereNotNull('tax_amount')
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for')
             ->whereNotNull('article_id')
             ->distinct()
             ->pluck('article_id');
-        
+
         $articles = Article::whereIn('id', $articleIds)
             ->orderBy('name')
             ->get();
@@ -29,8 +43,13 @@ class TaxLedgerController extends Controller
     {
         $article = Article::findOrFail($articleId);
 
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type = session('account_type', current_account_type_id());
+
         // Get R&P entries with tax deductions for this article (both receipt and payment)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
@@ -104,7 +123,12 @@ class TaxLedgerController extends Controller
         $article = Article::findOrFail($articleId);
 
         // Get R&P entries with tax deductions for this article (both receipt and payment)
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type = session('account_type', current_account_type_id());
+        
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
@@ -209,7 +233,7 @@ class TaxLedgerController extends Controller
         });
         // dd($pages);
 
-        return view('tax_ledgers.print', compact('pages','article', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
+        return view('tax_ledgers.print', compact('pages', 'article', 'rows', 'totalDebit', 'totalCredit', 'closingBalance', 'closingBalanceType'));
     }
 
     /**
@@ -258,7 +282,7 @@ class TaxLedgerController extends Controller
             $day = (int) $matches[1];
             $month = (int) $matches[2];
             $year = (int) $matches[3];
-            
+
             try {
                 return \Carbon\Carbon::create($year, $month, $day);
             } catch (\Exception $e) {

@@ -13,6 +13,15 @@ class ReportController extends Controller
      * Validate and normalize a date string. Accepts dd-mm-yyyy or dd/mm/yyyy.
      * Returns normalized dd/mm/yyyy string or null if invalid.
      */
+    protected $session_filter;
+    protected $account_type;
+
+    public function __construct()
+    {
+        $this->session_filter = session('session_id', current_session_year_id());
+        $this->account_type   = session('account_type', current_account_type_id());
+    }
+
     private function normalizeDateInput(?string $value): ?string
     {
         if ($value === null || trim($value) === '') {
@@ -36,7 +45,9 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id');
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
+
         $month = $request->input('month');
         $dateFromRaw = $request->input('date_from');
         $dateToRaw = $request->input('date_to');
@@ -68,10 +79,10 @@ class ReportController extends Controller
         $articles = Article::orderBy('name')->get();
 
         // Tax Totals (P Tax and TDS)
-        $taxTotals = $this->getTaxTotals($year, $month, $dateFrom, $dateTo, $session_filter);
+        $taxTotals = $this->getTaxTotals($year, $month, $dateFrom, $dateTo, $session_filter, $account_type);
 
         // Payment Totals by Article
-        $paymentTotals = $this->getPaymentTotals($articleId, $year, $month, $dateFrom, $dateTo);
+        $paymentTotals = $this->getPaymentTotals($articleId, $year, $month, $dateFrom, $dateTo, $session_filter, $account_type);
 
         return view('report', compact('month', 'dateFrom', 'dateTo', 'articleId', 'articles', 'taxTotals', 'paymentTotals', 'year'));
     }
@@ -112,10 +123,11 @@ class ReportController extends Controller
     /**
      * Get tax totals (P Tax and TDS) with date/month filters
      */
-    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter)
+    private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter, $account_type)
     {
         $query = ReceiptPaymentEntry::where('type', 'payment')
             ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for');
@@ -152,9 +164,11 @@ class ReportController extends Controller
     /**
      * Get payment totals by article with date/month filters
      */
-    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null)
+    private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter, $account_type)
     {
         $query = ReceiptPaymentEntry::with('article')
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where('type', 'payment');
 
         if ($articleId) {

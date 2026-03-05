@@ -11,15 +11,24 @@ use Illuminate\Http\Request;
 
 class ReceiptPaymentAccountController extends Controller
 {
+    protected $session_filter;
+    protected $account_type;
+
+    public function __construct()
+    {
+        $this->session_filter = session('session_id', current_session_year_id());
+        $this->account_type   = session('account_type', current_account_type_id());
+    }
+
     public function index(Request $request)
     {
-        $session_filter = $request->get('session_id',current_session_year_id());
-        $account_type = $request->get('account_type',3);
-        $accounts = ReceiptPaymentAccount::where('session_year_id', $session_filter)->where('account_type_id', $account_type)->orderByDesc('period_from')->paginate(15);
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type = session('account_type', current_account_type_id());
+        $accounts = ReceiptPaymentAccount::where('session_year_id', $session_filter)
+            ->where('account_type_id', $this->account_type)->orderByDesc('period_from')->paginate(15);
 
         return view('receipt_payments.index', compact('accounts'));
     }
-
 
     public function create()
     {

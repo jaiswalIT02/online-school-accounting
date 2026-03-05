@@ -69,4 +69,14 @@ class SessionYearController extends Controller
     {
         //
     }
+
+    public function storeAccountSelect(Request $request)
+    {
+        session([
+            'account_type' => $request->account_type,
+            'session_id'   => $request->session_id,
+        ]);
+
+        return redirect()->back();
+    }
 }

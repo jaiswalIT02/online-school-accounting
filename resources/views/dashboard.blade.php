@@ -8,16 +8,18 @@
     </div>
 
     @if (session('status'))
-        <div class="alert alert-success">{{ session('status') }}</div>
+    <div class="alert alert-success">{{ session('status') }}</div>
     @endif
-
+   
     <!-- Quick Stats -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card text-center border-primary">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Ledgers</h5>
-                    <h3 class="mb-0 text-primary">{{ \App\Models\Ledger::count() }}</h3>
+                    <h3 class="mb-0 text-primary">
+                        {{ \App\Models\Ledger::count() }}
+                    </h3>
                     <a href="{{ route('ledgers.index') }}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
                 </div>
             </div>

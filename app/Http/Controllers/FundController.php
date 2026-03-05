@@ -7,13 +7,16 @@ use App\Models\Fund;
 use App\Services\FundImportService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class FundController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Fund::query();
+        $session_filter = session('session_id', current_session_year_id());
+
+        $query = Fund::query()->where('session_year_id', $session_filter);
 
         // Apply filters
         if ($request->filled('search')) {
@@ -76,6 +79,8 @@ class FundController extends Controller
 
     public function store(Request $request)
     {
+        $session_year = session('session_id', current_session_year_id());
+
         $data = $request->validate([
             'fund_date' => ['required', 'string', 'max:10'],
             'component_name' => ['required', 'string', 'max:200'],
@@ -89,6 +94,10 @@ class FundController extends Controller
         if ($request->filled('fund_date')) {
             $data['fund_date'] = trim($request->fund_date);
         }
+
+        $data['session_year_id'] = $session_year;
+
+        // dd($data);
 
         Fund::create($data);
 
@@ -122,7 +131,9 @@ class FundController extends Controller
 
     public function show(Request $request)
     {
-        $query = Fund::query();
+        $session_filter = session('session_id', current_session_year_id());
+
+        $query = Fund::query()->where('session_year_id', $session_filter);
 
         // Apply filters
         if ($request->filled('search')) {
@@ -137,6 +148,7 @@ class FundController extends Controller
         if ($request->filled('component_name')) {
             $query->where('component_name', $request->component_name);
         }
+
 
         $query->when($request->sub_component_name, function ($q) use ($request) {
             $q->where('component_type', $request->sub_component_name);
@@ -222,6 +234,12 @@ class FundController extends Controller
 
     public function destroy(Fund $fund)
     {
+        $school_id = Auth::user()->school_id;
+
+        if ($fund->school_id !== $school_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $fund->delete();
 
         return redirect()

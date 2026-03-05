@@ -2,32 +2,21 @@
 
 namespace App\Models;
 
-use App\Models\Traits\AutoAssignAccountType;
-use App\Models\Traits\AutoAssignSessionYear;
-use App\Models\Traits\HasAccountType;
-use App\Models\Traits\HasSessionYear;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
-class Ledger extends Model
+class Account extends Model
 {
-    use HasFactory, HasSessionYear, AutoAssignSessionYear, HasAccountType, AutoAssignAccountType;
+    use HasFactory;
 
     protected $fillable = [
         'name',
-        'opening_balance',
-        'opening_balance_type',
-        'description',
-        'session_year_id',
-        'account_type_id',
+        'slug',
+        'status',
+        'school_id',
     ];
-
-    public function entries()
-    {
-        return $this->hasMany(LedgerEntry::class);
-    }
 
     protected static function booted()
     {
