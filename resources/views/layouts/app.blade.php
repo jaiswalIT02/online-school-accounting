@@ -56,18 +56,21 @@
                         </li>
 
                         @php
-                        $accountType = request('account_type', current_account_type_id());
+                        $accountType = session('account_type', current_account_type_id());
+                        
                         @endphp
 
                         @if($accountType == 1)
+
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index') }}">
+                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => $accountType, 'id' => $accountType]) }}">
                                 Receipt & Payment
                             </a>
                         </li>
+
                         @elseif($accountType == 2)
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt.create') }}">
+                            <a class="nav-link" href="{{ route('receipt.create' , ['account_type' => $accountType, 'id' => $accountType]) }}">
                                 Receipt
                             </a>
                         </li>
