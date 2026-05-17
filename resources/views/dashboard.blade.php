@@ -106,7 +106,7 @@
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Receipt & Payment Entries</span>
-                                <strong>{{ \App\Models\ReceiptPaymentEntry::count() }}</strong>
+                                <strong>{{ \App\Models\ReceiptPaymentEntryTest::count() }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
