@@ -777,6 +777,10 @@ SET
     session_year_id = @SESSION_YEAR_ID,
     school_id = @SCHOOL_ID;
 
+UPDATE articles
+SET
+    school_id = @SCHOOL_ID;
+
 UPDATE cashbooks
 SET
     session_year_id = @SESSION_YEAR_ID,
@@ -851,6 +855,7 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
   `tax_type` enum('dr','cr') DEFAULT NULL,
   `tax_remark` text,
   `pair_id` bigint UNSIGNED DEFAULT NULL,
+  `school_id` bigint UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
 
@@ -860,6 +865,7 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
   KEY `receipt_payment_entry_tests_beneficiary_id_foreign` (`beneficiary_id`),
   KEY `receipt_payment_entry_tests_account_id_type_index` (`account_id`,`type`),
   KEY `receipt_payment_entry_tests_pair_id_index` (`pair_id`),
+  KEY `receipt_payment_entry_tests_school_id_index` (`school_id`),
 
   CONSTRAINT `receipt_payment_entry_tests_account_id_foreign`
     FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE CASCADE,
@@ -871,6 +877,7 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
     FOREIGN KEY (`beneficiary_id`) REFERENCES `beneficiaries` (`id`) ON DELETE SET NULL
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 INSERT IGNORE INTO receipt_payment_entry_tests (
@@ -888,6 +895,7 @@ INSERT IGNORE INTO receipt_payment_entry_tests (
     tax_type,
     tax_remark,
     pair_id,
+    school_id,
     created_at,
     updated_at
 )
@@ -906,6 +914,7 @@ SELECT
     tax_type,
     tax_remark,
     pair_id,
+    1 AS school_id,
     created_at,
     updated_at
 FROM receipt_payment_entries;

@@ -7,6 +7,7 @@ use App\Models\Ledger;
 use App\Models\LedgerEntry;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
+use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -75,7 +76,7 @@ class LedgerController extends Controller
         // Get only normal R&P entries (exclude tax entries)
         // Normal entries: have amount > 0 and particular_name doesn't start with tax identifiers
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
@@ -92,6 +93,8 @@ class LedgerController extends Controller
             })
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
             ->get();
+
+        // dd($rpeEntries);
 
         $runningBalance = $ledger->opening_balance_type === 'Cr'
             ? -1 * $ledger->opening_balance
