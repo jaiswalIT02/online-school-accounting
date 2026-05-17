@@ -123,4 +123,12 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+
+
+    'dhboss' => [
+        'api_key' => env('DHBOSS_API_KEY'),
+        'api_url' => env('DHBOSS_API_URL'),
+    ],
+
 ];

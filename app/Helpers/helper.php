@@ -59,3 +59,30 @@ function loadAccountType()
 
     return $accountType;
 }
+
+
+if (!function_exists('parseDateOrNull')) {
+    /**
+     * Parse a date string into Carbon object if valid.
+     *
+     * @param string|null $dateString
+     * @param string $format
+     * @return Carbon|null
+     */
+    function parseDateOrNull(?string $dateString, string $format = 'd/m/Y'): ?Carbon
+    {
+        if (!$dateString) {
+            return null;
+        }
+
+        try {
+            $date = Carbon::createFromFormat($format, $dateString);
+
+            // Ensure strict match (to catch invalid dates like 32/01/2024)
+            return $date->format($format) === $dateString ? $date : null;
+
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+}

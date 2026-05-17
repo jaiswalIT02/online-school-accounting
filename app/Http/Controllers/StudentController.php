@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Models\UdiseStudent;
 use App\Services\StudentImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+
+use Illuminate\Support\Facades\Http;
 
 class StudentController extends Controller
 {
@@ -55,16 +58,16 @@ class StudentController extends Controller
         if ($request->filled('age_to')) {
             $query->whereRaw("CAST(SUBSTRING_INDEX(age, ' Years', 1) AS UNSIGNED) <= ?", [$request->age_to]);
         }
-        
+
         // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('student_name', 'like', "%{$search}%")
-                  ->orWhere('student_id', 'like', "%{$search}%")
-                  ->orWhere('admission_no', 'like', "%{$search}%")
-                  ->orWhere('father_name', 'like', "%{$search}%")
-                  ->orWhere('mobile_no', 'like', "%{$search}%");
+                    ->orWhere('student_id', 'like', "%{$search}%")
+                    ->orWhere('admission_no', 'like', "%{$search}%")
+                    ->orWhere('father_name', 'like', "%{$search}%")
+                    ->orWhere('mobile_no', 'like', "%{$search}%");
             });
         }
 
@@ -90,7 +93,7 @@ class StudentController extends Controller
         if ($request->filled('ifsc')) {
             $request->merge(['ifsc' => strtoupper($request->ifsc)]);
         }
-        
+
         $validated = $this->validateStudent($request);
 
         // Auto-increment SL No if not provided
@@ -158,7 +161,7 @@ class StudentController extends Controller
             $parts = explode(',', $student->address);
             $addressParts = array_map('trim', $parts);
         }
-        
+
         return view('students.edit', compact('student', 'addressParts'));
     }
 
@@ -171,7 +174,7 @@ class StudentController extends Controller
         if ($request->filled('ifsc')) {
             $request->merge(['ifsc' => strtoupper($request->ifsc)]);
         }
-        
+
         $validated = $this->validateStudent($request, $student->id);
 
         // Auto-calculate age from DOB
@@ -254,16 +257,16 @@ class StudentController extends Controller
         if ($request->filled('age_to')) {
             $query->whereRaw("CAST(SUBSTRING_INDEX(age, ' Years', 1) AS UNSIGNED) <= ?", [$request->age_to]);
         }
-        
+
         // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('student_name', 'like', "%{$search}%")
-                  ->orWhere('student_id', 'like', "%{$search}%")
-                  ->orWhere('admission_no', 'like', "%{$search}%")
-                  ->orWhere('father_name', 'like', "%{$search}%")
-                  ->orWhere('mobile_no', 'like', "%{$search}%");
+                    ->orWhere('student_id', 'like', "%{$search}%")
+                    ->orWhere('admission_no', 'like', "%{$search}%")
+                    ->orWhere('father_name', 'like', "%{$search}%")
+                    ->orWhere('mobile_no', 'like', "%{$search}%");
             });
         }
 
@@ -278,7 +281,7 @@ class StudentController extends Controller
     public function restore($id)
     {
         $student = Student::findOrFail($id);
-        
+
         if ($student->status != 1) {
             return redirect()->route('students.bin')->with('error', 'Student is not deleted.');
         }
@@ -319,21 +322,44 @@ class StudentController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($students) {
+        $callback = function () use ($students) {
             $file = fopen('php://output', 'w');
-            
+
             // Add BOM for Excel UTF-8 support
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             // Headers
             fputcsv($file, [
-                'SL No', 'Admission Date', 'Admission No', 'Class', 'Student ID', 'Student Name',
-                'PEN Number', 'Aapaar ID', 'Father Name', 'Mother Name', 'Caste',
-                'DOB', 'Age', 'Mobile No',
+                'SL No',
+                'Admission Date',
+                'Admission No',
+                'Class',
+                'Student ID',
+                'Student Name',
+                'PEN Number',
+                'Aapaar ID',
+                'Father Name',
+                'Mother Name',
+                'Caste',
+                'DOB',
+                'Age',
+                'Mobile No',
                 'Address',
-                'Dropout School', 'Dropout Date', 'Dropout Reason', 'Height (Feet)', 'Weight (Kg)',
-                'Blood Group', 'Vendor Code', 'Bank Name', 'Branch Name', 'IFSC', 'Account No',
-                'Aadhaar No', 'Father Aadhaar No', 'Father Voter ID No', 'Father PAN No'
+                'Dropout School',
+                'Dropout Date',
+                'Dropout Reason',
+                'Height (Feet)',
+                'Weight (Kg)',
+                'Blood Group',
+                'Vendor Code',
+                'Bank Name',
+                'Branch Name',
+                'IFSC',
+                'Account No',
+                'Aadhaar No',
+                'Father Aadhaar No',
+                'Father Voter ID No',
+                'Father PAN No'
             ]);
 
             // Data rows
@@ -513,6 +539,121 @@ class StudentController extends Controller
             return redirect()
                 ->route('students.import')
                 ->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+
+
+    public function fetchStudentsData(Request $request)
+    {
+        $response = Http::post('http://localhost:3000/fetch-data', [
+            'email' => '18110202707',
+            'password' => 'Radhe@123',
+        ]);
+
+        if ($response->successful()) {
+            if ($response->json()['success'] === true) {
+                $studentsData = $response->json()['data'];
+                // Process the data as needed
+                foreach ($studentsData as $student) {
+                    // Example: Create or update student records in the database
+                    UdiseStudent::updateOrCreate(
+                        ['studentId' => $student['studentId']], // Unique column
+
+                        [
+                            'studentCodeNat'        => $student['studentCodeNat'] ?? null,
+                            'studentCodeState'      => $student['studentCodeState'] ?? null,
+                            'schoolId'              => $student['schoolId'] ?? null,
+                            'studentName'           => $student['studentName'] ?? null,
+                            'gender'                => $student['gender'] ?? null,
+                            'genderDesc'            => $student['genderDesc'] ?? null,
+                            'socCatId'              => $student['socCatId'] ?? null,
+                            'socialCategoryDesc'    => $student['socialCategoryDesc'] ?? null,
+                            'minorityId'            => $student['minorityId'] ?? null,
+                            'minorityDesc'          => $student['minorityDesc'] ?? null,
+                            'uuid'                  => $student['uuid'] ?? null,
+                            'uuidMasked'            => $student['uuidMasked'] ?? null,
+                            'isUuidAvailable'       => $student['isUuidAvailable'] ?? 0,
+                            'isValidUuid'           => $student['isValidUuid'] ?? 0,
+                            'nameAsUuid'            => $student['nameAsUuid'] ?? null,
+                            'uuidStatus'            => $student['uuidStatus'] ?? null,
+                            'uuidStatusDesc'        => $student['uuidStatusDesc'] ?? null,
+                            'uuidValidateRemarks'   => $student['uuidValidateRemarks'] ?? null,
+                            'uuidValidateDate'      => $student['uuidValidateDate'] ? Carbon::createFromFormat('d/m/Y h:i:s A', $student['uuidValidateDate']) : null,         
+                            'dob'                   => $student['dob'] ? Carbon::createFromFormat('d/m/Y', $student['dob']) : null,
+                            'guardianName'          => $student['guardianName'] ?? null,
+                            'fatherName'            => $student['fatherName'] ?? null,
+                            'motherName'            => $student['motherName'] ?? null,
+                            'address'               => $student['address'] ?? null,
+                            'pincode'               => $student['pincode'] ?? null,
+                            'primaryMobile'         => $student['primaryMobile'] ?? null,
+                            'secondaryMobile'       => $student['secondaryMobile'] ?? null,
+                            'email'                 => $student['email'] ?? null,
+                            'isBplYN'               => $student['isBplYN'] ?? 0,
+                            'aayBplYN'              => $student['aayBplYN'] ?? 0,
+                            'ewsYN'                 => $student['ewsYN'] ?? 0,
+                            'cwsnYN'                => $student['cwsnYN'] ?? 0,
+                            'natIndYN'              => $student['natIndYN'] ?? 0,
+                            'motherTongue'          => $student['motherTongue'] ?? null,
+                            'motherTongueDesc'      => $student['motherTongueDesc'] ?? null,
+                            'acYearId'              => $student['acYearId'] ?? null,
+                            'lastYearId'            => $student['lastYearId'] ?? null,
+                            'lastYearIdDesc'        => $student['lastYearIdDesc'] ?? null,
+                            'classId'               => $student['classId'] ?? null,
+                            'classDesc'             => $student['classDesc'] ?? null,
+                            'classPyId'             => $student['classPyId'] ?? null,
+                            'classPyDesc'           => $student['classPyDesc'] ?? null,
+                            'sectionId'             => $student['sectionId'] ?? null,
+                            'sectionDesc'           => $student['sectionDesc'] ?? null,
+                            'sectionPyDesc'         => $student['sectionPyDesc'] ?? null,
+                            'impairmentType'        => $student['impairmentType'] ?? null,
+                            'disabilityCerti'       => $student['disabilityCerti'] ?? 0,
+                            'impairmentPercent'     => $student['impairmentPercent'] ?? 0.00,
+                            'ooscYN'                => $student['ooscYN'] ?? 0,
+                            'ooscMainstreamedYN'    => $student['ooscMainstreamedYN'] ?? 0,
+                            'profileStatus'         => $student['profileStatus'] ?? null,
+                            'formStatus'            => $student['formStatus'] ?? null,
+                            'ageCheckSkipped'       => $student['ageCheckSkipped'] ?? 0,
+                            'academicStreamDesc'    => $student['academicStreamDesc'] ?? null,
+                            'admnNumber'            => $student['admnNumber'] ?? null,
+                            'isRepeater'            => $student['isRepeater'] ?? 0,
+                            'inactiveDate'          => parseDateOrNull($student['inactiveDate']),
+                            'statusId'              => $student['statusId'] ?? null,
+                            'statusDesc'            => $student['statusDesc'] ?? null,
+                            'statusL1Id'            => $student['statusL1Id'] ?? null,
+                            'statusL1Desc'          => $student['statusL1Desc'] ?? null,
+                            'statusL2Id'            => $student['statusL2Id'] ?? null,
+                            'statusL2Desc'          => $student['statusL2Desc'] ?? null,
+                            'isNew'                 => $student['isNew'] ?? 0,
+                            'bloodGroup'            => $student['bloodGroup'] ?? null,
+                            'bloodGroupDesc'        => $student['bloodGroupDesc'] ?? null,
+                            'deleteReason'          => $student['deleteReason'] ?? null,
+                            'deleteReasonDesc'      => $student['deleteReasonDesc'] ?? null,
+                            'schUdiseCode'          => $student['schUdiseCode'] ?? null,
+                            'schoolName'            => $student['schoolName'] ?? null,
+                            'yearId'                => $student['yearId'] ?? null,
+                            'studentMovType'        => $student['studentMovType'] ?? null,
+                            'lastModifiedOn'        => $student['lastModifiedOn'] ? Carbon::createFromFormat('d/m/Y h:i:s A', $student['lastModifiedOn']) : null,
+                            'lastModifiedBy'        => $student['lastModifiedBy'] ?? null,
+                            'apaarIdStatus'         => $student['apaarIdStatus'] ?? null,
+                            'apaarId'               => $student['apaarId'] ?? null,
+                            'apaarIdStatusDesc'     => $student['apaarIdStatusDesc'] ?? null,
+                            'schoolPY'              => $student['schoolPY'] ?? null,
+                            'mbuStatusDesc'         => $student['mbuStatusDesc'] ?? null,
+                            'examFormStatus'        => $student['examFormStatus'] ?? 0,
+                        ]
+                    );
+                }
+
+                return response()->json(['message' => 'Data fetched and stored successfully']);
+            } else {
+                return response()->json(['error' => 'Invalid credentials or no data found'], 401);
+            }
+            $studentsData = $response->json();
+            // Process the data as needed
+            return response()->json($studentsData);
+        } else {
+            return response()->json(['error' => 'Failed to fetch data'], 500);
         }
     }
 }

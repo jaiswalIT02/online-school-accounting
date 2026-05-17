@@ -173,6 +173,118 @@ Route::middleware('auth')->group(function () {
     Route::get('staff/bin', [StaffController::class, 'bin'])->name('staff.bin');
     Route::post('staff/{id}/restore', [StaffController::class, 'restore'])->name('staff.restore');
     Route::resource('staff', StaffController::class);
+
+
+    Route::get('/student/data',[StudentController::class,'fetchStudentsData']);
+
+
+
+
+    Route::get('/test', function () {
+
+        $baseUrl = 'https://sdms.udiseplus.gov.in';
+
+        // ✅ Create real CookieJar
+        $cookieJar = new CookieJar();
+
+        $client = Http::withOptions([
+            'cookies' => $cookieJar,
+            'allow_redirects' => true,
+        ]);
+
+        // 1️⃣ Get login page
+        $loginPage = $client->get($baseUrl . '/p2/v1/login?state-id=118');
+
+        // dd($loginPage->body()); // Debug: Check if we got the login page HTML
+
+        // Extract CSRF token
+        preg_match('/name="_csrf"\s+value="(.*?)"/', $loginPage->body(), $matches);
+        $csrfToken = $matches[1] ?? null;
+
+        $captchaImage = $client->get('https://sdms.udiseplus.gov.in/p2/captcha')->body();
+
+        // dd($captchaImage); // Debug: Check if we extracted the captcha image
+
+        $captchaBase64 = 'data:image/jpeg;base64,'.base64_encode($captchaImage);
+
+        $captcha_text = app(\App\Services\DhbossCaptchaService::class)->solve($captchaBase64);
+
+        // dd($captcha_text); // Debug: Check if we got the captcha text
+
+        if (!$csrfToken) {
+            return 'CSRF token not found';
+        }
+
+        // 2️⃣ Login
+        $loginResponse = $client->asForm()->post($baseUrl . '/p2/v1/login', [
+            '_csrf'   => $csrfToken,
+            'email'    => '18110202707',
+            'password' => 'Radhe@123',
+            'captcha'  => $captcha_text['response']['text'] ?? '',
+        ]);
+
+        // Optional debug
+        dd($loginResponse->body());
+
+        // 3️⃣ Access protected page (session maintained)
+        $protectedPage = $client->get($baseUrl . '/ledgers');
+
+        $html = $protectedPage->body();
+
+        // 4️⃣ Parse table
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $dom->loadHTML($html);
+
+        $xpath = new \DOMXPath($dom);
+        $rows = $xpath->query("//table[contains(@class,'table')]/tbody/tr");
+
+        $data = [];
+
+        foreach ($rows as $row) {
+
+            $cells = $row->getElementsByTagName('td');
+            $rowData = [];
+
+            foreach ($cells as $cell) {
+
+                $text = $cell->textContent;
+
+                $text = str_replace(["\r", "\n", "\t"], ' ', $text);
+                $text = preg_replace('/\s+/', ' ', $text);
+                $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+                $rowData[] = trim($text);
+            }
+
+            $data[] = $rowData;
+        }
+
+        return response()->json($data);
+    });
+
+
+
+    Route::get('/browser-test', function () {
+        $client = PantherTestCase::startWebDriver();  // Start the browser (Chrome)
+
+        // Visit the login page
+        $crawler = $client->request('GET', 'https://app.workforceclerk.com/login');
+
+        // Fill out the login form (simulate login)
+        $form = $crawler->selectButton('Login')->form();
+        $form['email'] = 'tarun@gmail.com';
+        $form['password'] = '12345';
+        $client->submit($form);
+
+        // Wait for the protected page to load
+        $client->waitFor('.user');  // Wait for a specific element on the protected page
+
+        // Extract the protected page HTML
+        $protectedPageHtml = $client->getPageSource();
+
+        return response()->json(['protected_page' => $protectedPageHtml]);
+    });
 });
 
 require __DIR__ . '/auth.php';
