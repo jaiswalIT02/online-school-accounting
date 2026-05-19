@@ -199,7 +199,6 @@ ALTER TABLE session_years
 ADD UNIQUE KEY uq_session_years_session_name (session_name),
 ADD UNIQUE KEY uq_session_years_slug (slug);
 
-
 ALTER TABLE ledgers
 DROP FOREIGN KEY IF EXISTS fk_ledgers_account_type;
 ALTER TABLE ledgers
@@ -284,6 +283,21 @@ ALTER TABLE students
 DROP FOREIGN KEY IF EXISTS fk_students_school;
 
 ALTER TABLE students
+DROP COLUMN IF EXISTS session_year_id,
+DROP COLUMN IF EXISTS school_id;
+
+
+
+-- =====================================================
+-- STAFFS
+-- =====================================================
+
+ALTER TABLE staff
+DROP FOREIGN KEY IF EXISTS fk_staff_session_year;
+ALTER TABLE staff
+DROP FOREIGN KEY IF EXISTS fk_staff_school;
+
+ALTER TABLE staff
 DROP COLUMN IF EXISTS session_year_id,
 DROP COLUMN IF EXISTS school_id;
 
@@ -636,6 +650,29 @@ ADD CONSTRAINT fk_students_school
     ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+-- =====================================================
+-- STAFF
+-- =====================================================
+
+ALTER TABLE staff
+ADD COLUMN session_year_id BIGINT UNSIGNED NULL,
+ADD COLUMN school_id BIGINT UNSIGNED NULL;
+
+ALTER TABLE staff
+ADD INDEX idx_staff_session_year (session_year_id),
+ADD INDEX idx_staff_school (school_id);
+
+ALTER TABLE staff
+ADD CONSTRAINT fk_staff_session_year
+    FOREIGN KEY (session_year_id)
+    REFERENCES session_years(id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+
+ADD CONSTRAINT fk_staff_school
+    FOREIGN KEY (school_id)
+    REFERENCES schools(id)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 
 -- =====================================================
 -- STOCKS
@@ -856,6 +893,8 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
   `tax_remark` text,
   `pair_id` bigint UNSIGNED DEFAULT NULL,
   `school_id` bigint UNSIGNED DEFAULT NULL,
+  `session_year_id` bigint UNSIGNED DEFAULT NULL,
+  `account_type_id` bigint UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
 
@@ -865,7 +904,9 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
   KEY `receipt_payment_entry_tests_beneficiary_id_foreign` (`beneficiary_id`),
   KEY `receipt_payment_entry_tests_account_id_type_index` (`account_id`,`type`),
   KEY `receipt_payment_entry_tests_pair_id_index` (`pair_id`),
-  KEY `receipt_payment_entry_tests_school_id_index` (`school_id`),
+  KEY `receipt_payment_entry_tests_account_type_id_index` (`school_id`),
+  KEY `receipt_payment_entry_tests_session_year_id_index` (`session_year_id`),
+  KEY `receipt_payment_entry_tests_account_type_id_index` (`account_type_id`),
 
   CONSTRAINT `receipt_payment_entry_tests_account_id_foreign`
     FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE CASCADE,
@@ -919,6 +960,6 @@ SELECT
     updated_at
 FROM receipt_payment_entries;
 
-INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`, `school_id`) VALUES (NULL, 'KGBVDKJ Admin', 'kgbvdkj@gmail.com', NULL, '$2y$12$76DwiCNlp7gqzbfRBMS0/e/aPr3K1kAssB7bdIEWiGu21aB.A3N3.', NULL, '2026-01-27 18:48:19', '2026-01-27 19:27:24', '1');
+INSERT IGNORE INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`, `school_id`) VALUES (NULL, 'KGBVDKJ Admin', 'kgbvdkj@gmail.com', NULL, '$2y$12$76DwiCNlp7gqzbfRBMS0/e/aPr3K1kAssB7bdIEWiGu21aB.A3N3.', NULL, '2026-01-27 18:48:19', '2026-01-27 19:27:24', '1');
 
 COMMIT;

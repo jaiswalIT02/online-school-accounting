@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\ReceiptPaymentEntry;
+use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 
 class TaxLedgerController extends Controller
@@ -23,9 +24,9 @@ class TaxLedgerController extends Controller
         $session_filter = session('session_id', current_session_year_id());
         $account_type = session('account_type', current_account_type_id());
 
-        $articleIds = ReceiptPaymentEntry::whereNotNull('tax_amount')
-            ->where('session_year_id', $session_filter)
-            ->where('account_type_id', $account_type)
+        $articleIds = ReceiptPaymentEntryTest::whereNotNull('tax_amount')
+            // ->where('session_year_id', $session_filter)
+            // ->where('account_type_id', $account_type)
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for')
             ->whereNotNull('article_id')

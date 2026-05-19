@@ -14,24 +14,18 @@ class CashbookController extends Controller
     {
         $query = Cashbook::query();
 
-        if ($request->filled('session_id')) {
-            $query->where('session_year_id', $request->session_id);
-        }
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
 
-        if ($request->filled('account_type')) {
-            $query->where('account_type_id', $request->account_type);
-        }
-
-        // dd($query->toSql(), $query->getBindings());
-
-        $cashbooks = $query->orderByDesc('period_year')
+        $cashbooks = $query->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
+            ->orderByDesc('period_year')
             ->orderBy('period_month')
             ->paginate(15)
             ->withQueryString();
 
         return view('cashbooks.index', compact('cashbooks'));
     }
-
 
     public function create()
     {
