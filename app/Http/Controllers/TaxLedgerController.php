@@ -25,17 +25,19 @@ class TaxLedgerController extends Controller
         $account_type = session('account_type', current_account_type_id());
 
         $articleIds = ReceiptPaymentEntryTest::whereNotNull('tax_amount')
-            // ->where('session_year_id', $session_filter)
-            // ->where('account_type_id', $account_type)
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where('tax_amount', '>', 0)
             ->whereNotNull('tax_for')
             ->whereNotNull('article_id')
             ->distinct()
             ->pluck('article_id');
 
-        $articles = Article::whereIn('id', $articleIds)
+            
+            $articles = Article::whereIn('id', $articleIds)
             ->orderBy('name')
             ->get();
+            // dd($articles);
 
         return view('tax_ledgers.index', compact('articles'));
     }
@@ -48,7 +50,7 @@ class TaxLedgerController extends Controller
         $account_type = session('account_type', current_account_type_id());
 
         // Get R&P entries with tax deductions for this article (both receipt and payment)
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)
@@ -127,7 +129,7 @@ class TaxLedgerController extends Controller
         $session_filter = session('session_id', current_session_year_id());
         $account_type = session('account_type', current_account_type_id());
         
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)

@@ -8,15 +8,15 @@ use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\Ledger;
 use App\Models\LedgerEntry;
-use App\Models\ReceiptPaymentEntry;
+use App\Models\ReceiptPaymentEntryTest;
 use Carbon\Carbon;
 
 class ReceiptPaymentSyncService
 {
     /**
-     * Sync a ReceiptPaymentEntry to Cashbooks
+     * Sync a ReceiptPaymentEntryTest to Cashbooks
      */
-    public function syncToCashbooks(ReceiptPaymentEntry $rpeEntry): void
+    public function syncToCashbooks(ReceiptPaymentEntryTest $rpeEntry): void
     {
         $entryDate = $rpeEntry->created_at;
         $year = (int) $entryDate->format('Y');
@@ -48,9 +48,9 @@ class ReceiptPaymentSyncService
     }
 
     /**
-     * Sync a ReceiptPaymentEntry to a specific Cashbook
+     * Sync a ReceiptPaymentEntryTest to a specific Cashbook
      */
-    public function syncEntryToCashbook(ReceiptPaymentEntry $rpeEntry, Cashbook $cashbook): void
+    public function syncEntryToCashbook(ReceiptPaymentEntryTest $rpeEntry, Cashbook $cashbook): void
     {
         $entryDate = $rpeEntry->created_at->format('Y-m-d');
         $currentParticulars = $rpeEntry->current_particular_name;
@@ -90,9 +90,9 @@ class ReceiptPaymentSyncService
     }
 
     /**
-     * Sync a ReceiptPaymentEntry to Ledgers
+     * Sync a ReceiptPaymentEntryTest to Ledgers
      */
-    public function syncToLedgers(ReceiptPaymentEntry $rpeEntry): void
+    public function syncToLedgers(ReceiptPaymentEntryTest $rpeEntry): void
     {
         // Find ledgers by article_id or beneficiary_id - get the name from relationship
         $ledgers = collect();
@@ -114,9 +114,9 @@ class ReceiptPaymentSyncService
     }
 
     /**
-     * Sync a ReceiptPaymentEntry to a specific Ledger
+     * Sync a ReceiptPaymentEntryTest to a specific Ledger
      */
-    private function syncEntryToLedger(ReceiptPaymentEntry $rpeEntry, Ledger $ledger): void
+    private function syncEntryToLedger(ReceiptPaymentEntryTest $rpeEntry, Ledger $ledger): void
     {
         $entryDate = $rpeEntry->created_at->format('Y-m-d');
         $debit = $rpeEntry->type === 'receipt' ? $rpeEntry->amount : 0;
@@ -159,7 +159,7 @@ class ReceiptPaymentSyncService
     /**
      * Sync tax deduction as a separate entry to Ledger
      */
-    public function syncTaxEntryToLedger(ReceiptPaymentEntry $rpeEntry, Ledger $ledger): void
+    public function syncTaxEntryToLedger(ReceiptPaymentEntryTest $rpeEntry, Ledger $ledger): void
     {
         $entryDate = $rpeEntry->created_at->format('Y-m-d');
         $taxAmount = $rpeEntry->tax_amount;
@@ -224,18 +224,18 @@ class ReceiptPaymentSyncService
     }
 
     /**
-     * Remove a ReceiptPaymentEntry from Cashbooks
+     * Remove a ReceiptPaymentEntryTest from Cashbooks
      */
-    public function removeFromCashbooks(ReceiptPaymentEntry $rpeEntry): void
+    public function removeFromCashbooks(ReceiptPaymentEntryTest $rpeEntry): void
     {
         // Delete entries by receipt_payment_entry_id
         CashbookEntry::where('receipt_payment_entry_id', $rpeEntry->id)->delete();
     }
 
     /**
-     * Remove a ReceiptPaymentEntry from Ledgers
+     * Remove a ReceiptPaymentEntryTest from Ledgers
      */
-    public function removeFromLedgers(ReceiptPaymentEntry $rpeEntry): void
+    public function removeFromLedgers(ReceiptPaymentEntryTest $rpeEntry): void
     {
         // Delete main entries by receipt_payment_entry_id (excluding tax entries)
         LedgerEntry::where('receipt_payment_entry_id', $rpeEntry->id)

@@ -904,7 +904,7 @@ CREATE TABLE IF NOT EXISTS `receipt_payment_entry_tests` (
   KEY `receipt_payment_entry_tests_beneficiary_id_foreign` (`beneficiary_id`),
   KEY `receipt_payment_entry_tests_account_id_type_index` (`account_id`,`type`),
   KEY `receipt_payment_entry_tests_pair_id_index` (`pair_id`),
-  KEY `receipt_payment_entry_tests_account_type_id_index` (`school_id`),
+  KEY `receipt_payment_entry_tests_school_id_index` (`school_id`),
   KEY `receipt_payment_entry_tests_session_year_id_index` (`session_year_id`),
   KEY `receipt_payment_entry_tests_account_type_id_index` (`account_type_id`),
 

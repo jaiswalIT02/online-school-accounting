@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\ReceiptPaymentAccount;
-use App\Models\ReceiptPaymentEntry;
+use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 
 class CashbookController extends Controller
@@ -60,7 +60,7 @@ class CashbookController extends Controller
         $monthNumber = $this->getMonthNumber($cashbook->period_month);
 
         // Get all R&P entries with relationships
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
@@ -292,7 +292,7 @@ class CashbookController extends Controller
         $monthNumber = $this->getMonthNumber($cashbook->period_month);
 
         // Get all R&P entries with relationships
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
@@ -407,6 +407,8 @@ class CashbookController extends Controller
             $firstEntryDate = $receipts->first()->entry_date;
         } elseif ($payments->count() > 0) {
             $firstEntryDate = $payments->first()->entry_date;
+        } else {
+            $firstEntryDate = $payments->first()->entry_date;
         }
 
         // Paginate receipts
@@ -432,7 +434,7 @@ class CashbookController extends Controller
                 'total' => $runningReceiptTotal,
             ];
 
-            if($receiptChunks->first()){
+            if ($receiptChunks->first()) {
 
                 // Update running totals (opening balance + transactions)
                 // $runningReceiptCash += $pageReceiptCash;
@@ -580,7 +582,7 @@ class CashbookController extends Controller
         foreach ($receiptPages as $index  => $page) {
 
             // Pad payment pages to totalPages
-            if($index == 0){
+            if ($index == 0) {
                 $paymentPages[$index]['closing'] = [
                     'cash' => $page['closing']['cash'] + $page['opening']['cash'] - $paymentPages[$index]['opening']['cash'],
                     'bank' => $page['closing']['bank'] + $page['opening']['bank'] - $paymentPages[$index]['opening']['bank'],
@@ -591,12 +593,12 @@ class CashbookController extends Controller
 
             $receiptClosing = unserialize(serialize($page['closing']));
 
-            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index-1]['closing']));
+            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index - 1]['closing']));
 
             $receiptPages[$index]['closing'] = [
-                'cash' => $receiptClosing['cash'] + $paymentPages[$index-1]['closing']['cash'],
-                'bank' => $receiptClosing['bank'] + $paymentPages[$index-1]['closing']['bank'],
-                'total' => $receiptClosing['total'] + $paymentPages[$index-1]['closing']['total'],
+                'cash' => $receiptClosing['cash'] + $paymentPages[$index - 1]['closing']['cash'],
+                'bank' => $receiptClosing['bank'] + $paymentPages[$index - 1]['closing']['bank'],
+                'total' => $receiptClosing['total'] + $paymentPages[$index - 1]['closing']['total'],
             ];
             // Pad receipt pages to totalPages
             $paymentPages[$index]['closing'] = [
@@ -604,7 +606,6 @@ class CashbookController extends Controller
                 'bank' => $receiptPages[$index]['closing']['bank'] - $paymentPages[$index]['opening']['bank'],
                 'total' => $receiptPages[$index]['closing']['total'] - $paymentPages[$index]['opening']['total'],
             ];
-
         }
 
         // dd($receiptPages, $paymentPages);
@@ -645,7 +646,7 @@ class CashbookController extends Controller
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
 
         // Get all receipt_payment_entries from the selected account with relationships
-        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
             ->with(['article', 'beneficiary'])
             ->get();
@@ -660,7 +661,7 @@ class CashbookController extends Controller
         $skippedCount = 0;
 
         foreach ($rpeEntries as $rpeEntry) {
-            // Use ReceiptPaymentEntry's created_at for entry_date
+            // Use ReceiptPaymentEntryTest's created_at for entry_date
             $entryDate = $rpeEntry->created_at->format('Y-m-d');
 
             // Check if entry already exists by receipt_payment_entry_id
