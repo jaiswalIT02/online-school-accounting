@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\ReceiptPaymentAccount;
@@ -69,7 +68,7 @@ class CashbookController extends Controller
         $receipts = $rpeEntries->where('type', 'receipt')
             ->filter(function ($rpeEntry) use ($year, $monthNumber) {
                 // Extract PPA date from remarks
-                $ppaDate = $this->extractPpaDate($rpeEntry->remarks);
+                $ppaDate = $this->extractPpaDate($rpeEntry->date);
                 if ($ppaDate) {
                     // Filter by PPA date matching cashbook period
                     return $ppaDate->year == $year && $ppaDate->month == $monthNumber;
@@ -407,8 +406,6 @@ class CashbookController extends Controller
             $firstEntryDate = $receipts->first()->entry_date;
         } elseif ($payments->count() > 0) {
             $firstEntryDate = $payments->first()->entry_date;
-        } else {
-            $firstEntryDate = $payments->first()->entry_date;
         }
 
         // Paginate receipts
@@ -434,7 +431,7 @@ class CashbookController extends Controller
                 'total' => $runningReceiptTotal,
             ];
 
-            if ($receiptChunks->first()) {
+            if($receiptChunks->first()){
 
                 // Update running totals (opening balance + transactions)
                 // $runningReceiptCash += $pageReceiptCash;
@@ -582,7 +579,7 @@ class CashbookController extends Controller
         foreach ($receiptPages as $index  => $page) {
 
             // Pad payment pages to totalPages
-            if ($index == 0) {
+            if($index == 0){
                 $paymentPages[$index]['closing'] = [
                     'cash' => $page['closing']['cash'] + $page['opening']['cash'] - $paymentPages[$index]['opening']['cash'],
                     'bank' => $page['closing']['bank'] + $page['opening']['bank'] - $paymentPages[$index]['opening']['bank'],
@@ -593,12 +590,12 @@ class CashbookController extends Controller
 
             $receiptClosing = unserialize(serialize($page['closing']));
 
-            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index - 1]['closing']));
+            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index-1]['closing']));
 
             $receiptPages[$index]['closing'] = [
-                'cash' => $receiptClosing['cash'] + $paymentPages[$index - 1]['closing']['cash'],
-                'bank' => $receiptClosing['bank'] + $paymentPages[$index - 1]['closing']['bank'],
-                'total' => $receiptClosing['total'] + $paymentPages[$index - 1]['closing']['total'],
+                'cash' => $receiptClosing['cash'] + $paymentPages[$index-1]['closing']['cash'],
+                'bank' => $receiptClosing['bank'] + $paymentPages[$index-1]['closing']['bank'],
+                'total' => $receiptClosing['total'] + $paymentPages[$index-1]['closing']['total'],
             ];
             // Pad receipt pages to totalPages
             $paymentPages[$index]['closing'] = [
@@ -606,6 +603,7 @@ class CashbookController extends Controller
                 'bank' => $receiptPages[$index]['closing']['bank'] - $paymentPages[$index]['opening']['bank'],
                 'total' => $receiptPages[$index]['closing']['total'] - $paymentPages[$index]['opening']['total'],
             ];
+
         }
 
         // dd($receiptPages, $paymentPages);

@@ -9,7 +9,7 @@ use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class ReceiptPaymentEntryTestController extends Controller
+class ReceiptPaymentEntryController extends Controller
 {
     public function create(ReceiptPaymentAccount $receipt_payment)
     {
@@ -74,7 +74,7 @@ class ReceiptPaymentEntryTestController extends Controller
     public function store(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
         $data = $this->validateEntry($request);
-        $data['receipt_payment_account_id'] = $receipt_payment->id;
+        $data['account_id'] = $receipt_payment->id;
 
         // Extract transaction ID from remarks (format: "Txn ID: 32937166")
         $txnId = null;
@@ -83,16 +83,21 @@ class ReceiptPaymentEntryTestController extends Controller
         }
 
         // Use date from input if provided, otherwise extract PPA date from remarks
-        $ppaDate = !empty($data['date']) ? $data['date'] : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
+        $ppaDate = !empty($data['date'])
+            ? $data['date']
+            : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
 
+        $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
+
+        // dd($ppaDate);
         // If type is 'both', create both payment and receipt entries
         if ($data['type'] === 'both') {
             $entryData = [
-                'receipt_payment_account_id' => $receipt_payment->id,
+                'account_id' => $receipt_payment->id,
                 'article_id' => $data['article_id'] ?? null,
                 'beneficiary_id' => $data['beneficiary_id'] ?? null,
                 'particular_name' => $data['particular_name'],
-                'acode' => $data['acode'],
+                // 'acode' => $data['acode'],
                 'amount' => $data['amount'],
                 'remarks' => $data['remarks'] ?? null,
                 'date' => $ppaDate, // Store date in dd/mm/yyyy format
@@ -102,6 +107,8 @@ class ReceiptPaymentEntryTestController extends Controller
                 'tax_remark' => $data['tax_remark'] ?? null,
                 'pair_id' => $txnId, // Store transaction ID in pair_id
             ];
+
+            // dd($receipt_payment->entries());
 
             // Create receipt entry first
             $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
@@ -117,7 +124,7 @@ class ReceiptPaymentEntryTestController extends Controller
         } else if ($data['type'] === 'receipt') {
 
             $entryData = [
-                'receipt_payment_account_id' => $receipt_payment->id,
+                'account_id' => $receipt_payment->id,
                 'article_id' => $data['article_id'] ?? null,
                 'beneficiary_id' => $data['beneficiary_id'] ?? null,
                 'particular_name' => $data['particular_name'],
@@ -143,7 +150,7 @@ class ReceiptPaymentEntryTestController extends Controller
         } else if ($data['type'] === 'payment') {
 
             $entryData = [
-                'receipt_payment_account_id' => $receipt_payment->id,
+                'account_id' => $receipt_payment->id,
                 'article_id' => $data['article_id'] ?? null,
                 'beneficiary_id' => $data['beneficiary_id'] ?? null,
                 'particular_name' => $data['particular_name'],
@@ -335,7 +342,7 @@ class ReceiptPaymentEntryTestController extends Controller
             return redirect()->back()->with('status', 'Invalid selection.');
         }
         foreach ($entries as $entry) {
-            if ((int) $entry->receipt_payment_account_id === (int) $account->id) {
+            if ((int) $entry->account_id === (int) $account->id) {
                 $entry->delete();
             }
         }
@@ -366,7 +373,7 @@ class ReceiptPaymentEntryTestController extends Controller
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
-        $entries = $entries->filter(fn($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
+        $entries = $entries->filter(fn($e) => (int) $e->account_id === (int) $account->id)->values();
         if ($entries->isEmpty()) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
@@ -401,7 +408,7 @@ class ReceiptPaymentEntryTestController extends Controller
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }
-        $entries = $entries->filter(fn($e) => (int) $e->receipt_payment_account_id === (int) $account->id)->values();
+        $entries = $entries->filter(fn($e) => (int) $e->account_id === (int) $account->id)->values();
         if ($entries->isEmpty()) {
             return redirect()->back()->with('status', 'Invalid selection.');
         }

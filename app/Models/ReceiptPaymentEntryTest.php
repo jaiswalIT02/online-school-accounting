@@ -64,20 +64,20 @@ class ReceiptPaymentEntryTest extends Model
             $article = $this->relationLoaded('article') ? $this->article : Article::find($this->article_id);
             if ($article) {
                 $this->particular_name = $article->name;
-                $this->acode = $article->acode;
+                // $this->acode = $article->acode;
             }
         } elseif ($this->beneficiary_id) {
             $beneficiary = $this->relationLoaded('beneficiary') ? $this->beneficiary : Beneficiary::find($this->beneficiary_id);
             if ($beneficiary) {
                 $this->particular_name = $beneficiary->name;
-                $this->acode = $beneficiary->acode;
+                // $this->acode = $beneficiary->acode;
             }
         }
     }
 
     public function account()
     {
-        return $this->belongsTo(ReceiptPaymentAccount::class, 'receipt_payment_account_id');
+        return $this->belongsTo(ReceiptPaymentAccount::class, 'account_id');
     }
 
     /**
@@ -95,18 +95,18 @@ class ReceiptPaymentEntryTest extends Model
         return self::where('pair_id', $this->pair_id)
             ->where('type', $otherType)
             ->where('id', '!=', $this->id)
-            ->where('receipt_payment_account_id', $this->receipt_payment_account_id)
+            ->where('account_id', $this->account_id)
             ->get();
     }
 
     public function article()
     {
-        return $this->belongsTo(Article::class);
+        return $this->belongsTo(Article::class, 'account_id');
     }
 
     public function beneficiary()
     {
-        return $this->belongsTo(Beneficiary::class);
+        return $this->belongsTo(Beneficiary::class, 'account_id');
     }
 
     /**

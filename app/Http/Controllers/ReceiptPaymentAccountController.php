@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cashbook;
 use App\Models\ReceiptPaymentAccount;
-use App\Models\ReceiptPaymentEntryTest;
+use App\Models\ReceiptPaymentEntry;
 use App\Services\ReceiptPaymentSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -283,9 +283,9 @@ class ReceiptPaymentAccountController extends Controller
             'opening_bank' => 0,
         ]);
 
-        // Sync all ReceiptPaymentEntryTest records to this cashbook
+        // Sync all ReceiptPaymentEntry records to this cashbook
         $syncService = app(ReceiptPaymentSyncService::class);
-        $allEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])->get();
+        $allEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])->get();
 
         foreach ($allEntries as $entry) {
             // Manually sync to the specific cashbook

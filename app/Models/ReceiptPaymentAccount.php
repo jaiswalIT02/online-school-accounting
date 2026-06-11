@@ -36,7 +36,7 @@ class ReceiptPaymentAccount extends Model
 
     public function entries()
     {
-        return $this->hasMany(ReceiptPaymentEntryTest::class);
+        return $this->hasMany(ReceiptPaymentEntryTest::class, 'account_id');
     }
 
     protected static function booted()
