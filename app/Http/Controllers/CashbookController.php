@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\ReceiptPaymentAccount;
-use App\Models\ReceiptPaymentEntryTest;
+use App\Models\ReceiptPaymentEntry;
+use App\Models\SessionYear;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CashbookController extends Controller
@@ -54,12 +56,18 @@ class CashbookController extends Controller
 
     public function show(Cashbook $cashbook)
     {
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
         // Get cashbook period
         $year = (int) $cashbook->period_year;
+
         $monthNumber = $this->getMonthNumber($cashbook->period_month);
 
+
         // Get all R&P entries with relationships
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)   
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
@@ -73,8 +81,11 @@ class CashbookController extends Controller
                     // Filter by PPA date matching cashbook period
                     return $ppaDate->year == $year && $ppaDate->month == $monthNumber;
                 }
+
+                $rpe_month = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->month : null;
+                $rpe_year = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->year : null;
                 // If no PPA date, use created_at as fallback
-                return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
+                return $rpe_year == $year && $rpe_month == $monthNumber;
             })
             ->map(function ($rpeEntry) {
                 // Extract PPA date from remarks, fallback to created_at
@@ -106,8 +117,10 @@ class CashbookController extends Controller
                     // Filter by PPA date matching cashbook period
                     return $ppaDate->year == $year && $ppaDate->month == $monthNumber;
                 }
+                $rpe_month = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->month : null;
+                $rpe_year = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->year : null;
                 // If no PPA date, use created_at as fallback
-                return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
+                return $rpe_year == $year && $rpe_month == $monthNumber;
             })
             ->map(function ($rpeEntry) {
                 // Extract PPA date from remarks, fallback to created_at
@@ -291,7 +304,7 @@ class CashbookController extends Controller
         $monthNumber = $this->getMonthNumber($cashbook->period_month);
 
         // Get all R&P entries with relationships
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
@@ -644,7 +657,7 @@ class CashbookController extends Controller
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
 
         // Get all receipt_payment_entries from the selected account with relationships
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
             ->with(['article', 'beneficiary'])
             ->get();
@@ -659,7 +672,7 @@ class CashbookController extends Controller
         $skippedCount = 0;
 
         foreach ($rpeEntries as $rpeEntry) {
-            // Use ReceiptPaymentEntryTest's created_at for entry_date
+            // Use ReceiptPaymentEntry's created_at for entry_date
             $entryDate = $rpeEntry->created_at->format('Y-m-d');
 
             // Check if entry already exists by receipt_payment_entry_id
@@ -710,24 +723,32 @@ class CashbookController extends Controller
 
     public function createAllMonthsEntries()
     {
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
+
+        $session_year_object = SessionYear::find($session_year);
+        $start_year = Carbon::parse($session_year_object->start_date)->year;
+        $end_year = Carbon::parse($session_year_object->end_date)->year;
         // Financial year: April 2025 to March 2026
         $months = [
-            ['name' => 'April', 'year' => 2025],
-            ['name' => 'May', 'year' => 2025],
-            ['name' => 'June', 'year' => 2025],
-            ['name' => 'July', 'year' => 2025],
-            ['name' => 'August', 'year' => 2025],
-            ['name' => 'September', 'year' => 2025],
-            ['name' => 'October', 'year' => 2025],
-            ['name' => 'November', 'year' => 2025],
-            ['name' => 'December', 'year' => 2025],
-            ['name' => 'January', 'year' => 2026],
-            ['name' => 'February', 'year' => 2026],
-            ['name' => 'March', 'year' => 2026],
+            ['name' => 'April', 'year' => $start_year],
+            ['name' => 'May', 'year' => $start_year],
+            ['name' => 'June', 'year' => $start_year],
+            ['name' => 'July', 'year' => $start_year],
+            ['name' => 'August', 'year' => $start_year],
+            ['name' => 'September', 'year' => $start_year],
+            ['name' => 'October', 'year' => $start_year],
+            ['name' => 'November', 'year' => $start_year],
+            ['name' => 'December', 'year' => $start_year],
+            ['name' => 'January', 'year' => $end_year],
+            ['name' => 'February', 'year' => $end_year],
+            ['name' => 'March', 'year' => $end_year],
         ];
 
         $createdCount = 0;
         $skippedCount = 0;
+        
+
 
         // Create cashbook for each month
         foreach ($months as $monthData) {
@@ -737,6 +758,9 @@ class CashbookController extends Controller
             // Check if cashbook already exists for this month/year
             $existingCashbook = Cashbook::where('period_year', $year)
                 ->where('period_month', $monthName)
+                ->where('school_id', auth()->user()->school_id)
+                ->where('session_year_id', $session_year)
+                ->where('account_type_id', $account_type)
                 ->first();
 
             if (!$existingCashbook) {

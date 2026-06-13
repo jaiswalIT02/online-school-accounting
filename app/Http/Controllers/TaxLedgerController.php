@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\ReceiptPaymentEntry;
-use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 
 class TaxLedgerController extends Controller
@@ -24,7 +23,7 @@ class TaxLedgerController extends Controller
         $session_filter = session('session_id', current_session_year_id());
         $account_type = session('account_type', current_account_type_id());
 
-        $articleIds = ReceiptPaymentEntryTest::whereNotNull('tax_amount')
+        $articleIds = ReceiptPaymentEntry::whereNotNull('tax_amount')
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->where('tax_amount', '>', 0)
@@ -50,7 +49,7 @@ class TaxLedgerController extends Controller
         $account_type = session('account_type', current_account_type_id());
 
         // Get R&P entries with tax deductions for this article (both receipt and payment)
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)
@@ -126,12 +125,12 @@ class TaxLedgerController extends Controller
         $article = Article::findOrFail($articleId);
 
         // Get R&P entries with tax deductions for this article (both receipt and payment)
-        $session_filter = session('session_id', current_session_year_id());
-        $account_type = session('account_type', current_account_type_id());
+        // $session_filter = session('session_id', current_session_year_id());
+        // $account_type = session('account_type', current_account_type_id());
         
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
-            ->where('session_year_id', $session_filter)
-            ->where('account_type_id', $account_type)
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            // ->where('session_year_id', $session_filter)
+            // ->where('account_type_id', $account_type)
             ->where('article_id', $articleId)
             ->whereNotNull('tax_amount')
             ->where('tax_amount', '>', 0)

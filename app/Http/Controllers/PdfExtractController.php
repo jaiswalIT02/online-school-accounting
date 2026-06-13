@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReceiptPaymentAccount;
-use App\Models\ReceiptPaymentEntryTest;
+use App\Models\ReceiptPaymentEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -447,13 +447,13 @@ class PdfExtractController extends Controller
                     ];
                     
                     // Create receipt entry first
-                    $receiptEntry = ReceiptPaymentEntryTest::create(array_merge($entryData, [
+                    $receiptEntry = ReceiptPaymentEntry::create(array_merge($entryData, [
                         'type' => 'receipt',
                     ]));
                     $savedCount++;
                     
                     // Create payment entry with same transaction ID in pair_id
-                    $paymentEntry = ReceiptPaymentEntryTest::create(array_merge($entryData, ['type' => 'payment']));
+                    $paymentEntry = ReceiptPaymentEntry::create(array_merge($entryData, ['type' => 'payment']));
                     $savedCount++;
                 } catch (\Exception $e) {
                     // Log error with full details but continue with other entries

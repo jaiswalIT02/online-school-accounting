@@ -44,7 +44,7 @@ class CashbookEntry extends Model
 
     public function receiptPaymentEntry()
     {
-        return $this->belongsTo(ReceiptPaymentEntryTest::class, 'receipt_payment_entry_id');
+        return $this->belongsTo(ReceiptPaymentEntry::class, 'receipt_payment_entry_id');
     }
 
     /**

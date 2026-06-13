@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Beneficiary;
 use App\Models\ReceiptPaymentAccount;
-use App\Models\ReceiptPaymentEntryTest;
+use App\Models\ReceiptPaymentEntry;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -73,6 +73,8 @@ class ReceiptPaymentEntryController extends Controller
 
     public function store(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
         $data = $this->validateEntry($request);
         $data['account_id'] = $receipt_payment->id;
 
@@ -106,6 +108,8 @@ class ReceiptPaymentEntryController extends Controller
                 'tax_type' => $data['tax_type'] ?? null,
                 'tax_remark' => $data['tax_remark'] ?? null,
                 'pair_id' => $txnId, // Store transaction ID in pair_id
+                'account_type_id' => $account_type,
+                'session_year_id' => $session_year,
             ];
 
             // dd($receipt_payment->entries());
@@ -185,7 +189,7 @@ class ReceiptPaymentEntryController extends Controller
         }
     }
 
-    public function edit(ReceiptPaymentEntryTest $entry)
+    public function edit(ReceiptPaymentEntry $entry)
     {
         $receipt_payment = $entry->account;
         $articles = Article::orderBy('name')->get();
@@ -202,7 +206,7 @@ class ReceiptPaymentEntryController extends Controller
         ));
     }
 
-    public function update(Request $request, ReceiptPaymentEntryTest $entry)
+    public function update(Request $request, ReceiptPaymentEntry $entry)
     {
         $data = $this->validateEntry($request);
         $account = $entry->account;
@@ -312,7 +316,7 @@ class ReceiptPaymentEntryController extends Controller
             ->with('status', $message);
     }
 
-    public function destroy(ReceiptPaymentEntryTest $entry)
+    public function destroy(ReceiptPaymentEntry $entry)
     {
         $account = $entry->account;
 
@@ -336,7 +340,7 @@ class ReceiptPaymentEntryController extends Controller
             return redirect()->back()->with('status', 'No entries selected.');
         }
 
-        $entries = ReceiptPaymentEntryTest::whereIn('id', $ids)->get();
+        $entries = ReceiptPaymentEntry::whereIn('id', $ids)->get();
         $account = $entries->first()->account ?? null;
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');
@@ -365,7 +369,7 @@ class ReceiptPaymentEntryController extends Controller
             return redirect()->back()->with('status', 'No entries selected.');
         }
 
-        $entries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $entries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->whereIn('id', $ids)
             ->orderBy('id')
             ->get();
@@ -403,7 +407,7 @@ class ReceiptPaymentEntryController extends Controller
             return redirect()->back()->with('status', 'No entries selected.');
         }
 
-        $entries = ReceiptPaymentEntryTest::whereIn('id', $ids)->get();
+        $entries = ReceiptPaymentEntry::whereIn('id', $ids)->get();
         $account = $entries->first()->account ?? null;
         if (! $account) {
             return redirect()->back()->with('status', 'Invalid selection.');

@@ -20,7 +20,7 @@ class ReceiptPaymentEntry extends Model
         'receipt_payment_account_id',
         'type',
         'particular_name',
-        'acode',
+        // 'acode',
         'article_id',
         'beneficiary_id',
         'amount',
@@ -31,12 +31,24 @@ class ReceiptPaymentEntry extends Model
         'tax_type',
         'tax_remark',
         'pair_id',
+        'school_id',
         'session_year_id',
         'account_type_id',
     ];
 
     protected static function booted()
     {
+        static::addGlobalScope('school', function (Builder $builder) {
+            if (Auth::check()) {
+                $builder->where('school_id', Auth::user()->school_id);
+            }
+        });
+
+        static::creating(function ($model) {
+            if (Auth::check()) {
+                $model->school_id = Auth::user()->school_id;
+            }
+        });
         // Sync particular_name and acode from relationships before saving
         static::saving(function ($entry) {
             $entry->syncNameFromRelationship();
@@ -86,13 +98,13 @@ class ReceiptPaymentEntry extends Model
             $article = $this->relationLoaded('article') ? $this->article : Article::find($this->article_id);
             if ($article) {
                 $this->particular_name = $article->name;
-                $this->acode = $article->acode;
+                // $this->acode = $article->acode;
             }
         } elseif ($this->beneficiary_id) {
             $beneficiary = $this->relationLoaded('beneficiary') ? $this->beneficiary : Beneficiary::find($this->beneficiary_id);
             if ($beneficiary) {
                 $this->particular_name = $beneficiary->name;
-                $this->acode = $beneficiary->acode;
+                // $this->acode = $beneficiary->acode;
             }
         }
     }

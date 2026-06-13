@@ -7,7 +7,6 @@ use App\Models\Ledger;
 use App\Models\LedgerEntry;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
-use App\Models\ReceiptPaymentEntryTest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -76,7 +75,9 @@ class LedgerController extends Controller
         // Get only normal R&P entries (exclude tax entries)
         // Normal entries: have amount > 0 and particular_name doesn't start with tax identifiers
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
@@ -91,6 +92,8 @@ class LedgerController extends Controller
                 $query->where('particular_name', 'NOT LIKE', 'PTAX%')
                     ->where('particular_name', 'NOT LIKE', 'TDS%');
             })
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->orderBy('id', 'asc') // Preserve insertion order (receipt, payment, receipt, payment...)
             ->get();
 
@@ -201,7 +204,7 @@ class LedgerController extends Controller
         // Get only normal R&P entries (exclude tax entries)
         // Normal entries: have amount > 0
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
@@ -331,7 +334,7 @@ class LedgerController extends Controller
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
 
         // Find all receipt_payment_entries by article_id or beneficiary_id matching ledger name
-        $rpeEntries = ReceiptPaymentEntryTest::with(['article', 'beneficiary'])
+        $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {

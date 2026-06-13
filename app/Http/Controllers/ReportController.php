@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\ReceiptPaymentEntryTest;
+use App\Models\ReceiptPaymentEntry;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -93,7 +93,7 @@ class ReportController extends Controller
     private function detectYearForMonth($month)
     {
         // Check for entries with date column matching the month
-        $entries = ReceiptPaymentEntryTest::whereNotNull('date')
+        $entries = ReceiptPaymentEntry::whereNotNull('date')
             ->whereRaw("MONTH(STR_TO_DATE(date, '%d/%m/%Y')) = ?", [$month])
             ->get();
 
@@ -125,7 +125,7 @@ class ReportController extends Controller
      */
     private function getTaxTotals($year, $month = null, $dateFrom = null, $dateTo = null, $session_filter, $account_type)
     {
-        $query = ReceiptPaymentEntryTest::where('type', 'payment')
+        $query = ReceiptPaymentEntry::where('type', 'payment')
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->whereNotNull('tax_amount')
@@ -166,7 +166,7 @@ class ReportController extends Controller
      */
     private function getPaymentTotals($articleId, $year, $month = null, $dateFrom = null, $dateTo = null, $session_filter, $account_type)
     {
-        $query = ReceiptPaymentEntryTest::with('article')
+        $query = ReceiptPaymentEntry::with('article')
             ->where('session_year_id', $session_filter)
             ->where('account_type_id', $account_type)
             ->where('type', 'payment');
