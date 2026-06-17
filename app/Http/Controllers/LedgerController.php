@@ -201,10 +201,14 @@ class LedgerController extends Controller
 
     public function print(Ledger $ledger)
     {
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
         // Get only normal R&P entries (exclude tax entries)
         // Normal entries: have amount > 0
         // Order by ID to preserve insertion order (receipt, payment, receipt, payment...)
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
@@ -327,6 +331,8 @@ class LedgerController extends Controller
 
     public function processImport(Request $request, Ledger $ledger)
     {
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
         $request->validate([
             'receipt_payment_account_id' => ['required', 'exists:receipt_payment_accounts,id'],
         ]);
@@ -336,6 +342,8 @@ class LedgerController extends Controller
         // Find all receipt_payment_entries by article_id or beneficiary_id matching ledger name
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->where(function ($query) use ($ledger) {
                 $query->whereHas('article', function ($q) use ($ledger) {
                     $q->where('name', $ledger->name);
@@ -392,6 +400,9 @@ class LedgerController extends Controller
                     'debit' => $debit,
                     'credit' => $credit,
                     'narration' => $rpeEntry->remarks,
+                    'account_type_id' => $account_type,
+                    'session_year_id' => $session_filter,
+                    'school_id' => auth()->user()->school_id,
                 ]);
 
                 $importedCount++;

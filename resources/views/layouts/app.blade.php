@@ -64,7 +64,7 @@
 
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => $accountType, 'id' => $accountType]) }}">
-                                Receipt & Payment
+                                Receipt&nbsp;&&nbsp;Payment
                             </a>
                         </li>
 

@@ -25,6 +25,7 @@ class ReceiptPaymentAccountController extends Controller
         $session_filter = session('session_id', current_session_year_id());
         $account_type = session('account_type', current_account_type_id());
         $accounts = ReceiptPaymentAccount::where('session_year_id', $session_filter)
+            // ->where('account_id', $id)
             ->where('account_type_id', $this->account_type)->orderByDesc('period_from')->paginate(15);
         
             // dd($accounts);

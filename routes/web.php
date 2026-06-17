@@ -71,8 +71,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounts/create', [AccountController::class, 'create'])->name('accounts.create');
     Route::post('/accounts/store', [AccountController::class, 'store'])->name('accounts.store');
     Route::get('/accounts/show/{id}', [AccountController::class, 'show'])->name('accounts.show');
-    Route::get('/accounts/edit', [AccountController::class, 'edit'])->name('accounts.edit');
-    Route::get('/accounts/update', [AccountController::class, 'update'])->name('accounts.update');
+    Route::get('/accounts/edit/{id}', [AccountController::class, 'edit'])->name('accounts.edit');
+    Route::put('/accounts/{account}', [AccountController::class, 'update'])
+        ->name('accounts.update');
     Route::get('/accounts/destroy', [AccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Bulk routes must come before {entry} routes so "bulk-edit" / "bulk-update" are not matched as entry IDs
@@ -175,7 +176,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('staff', StaffController::class);
 
 
-    Route::get('/student/data',[StudentController::class,'fetchStudentsData']);
+    Route::get('/student/data', [StudentController::class, 'fetchStudentsData']);
 
 
 
@@ -205,7 +206,7 @@ Route::middleware('auth')->group(function () {
 
         // dd($captchaImage); // Debug: Check if we extracted the captcha image
 
-        $captchaBase64 = 'data:image/jpeg;base64,'.base64_encode($captchaImage);
+        $captchaBase64 = 'data:image/jpeg;base64,' . base64_encode($captchaImage);
 
         $captcha_text = app(\App\Services\DhbossCaptchaService::class)->solve($captchaBase64);
 

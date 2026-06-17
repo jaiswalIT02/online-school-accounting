@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Cashbook;
 use App\Models\CashbookEntry;
 use App\Models\ReceiptPaymentAccount;
@@ -8,6 +9,7 @@ use App\Models\ReceiptPaymentEntry;
 use App\Models\SessionYear;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CashbookController extends Controller
 {
@@ -35,6 +37,9 @@ class CashbookController extends Controller
 
     public function store(Request $request)
     {
+        $session_year = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'period_month' => ['required', 'string', 'max:20'],
@@ -46,6 +51,9 @@ class CashbookController extends Controller
 
         $data['opening_cash'] = $data['opening_cash'] ?? 0;
         $data['opening_bank'] = $data['opening_bank'] ?? 0;
+
+        $data['account_type_id'] = $account_type;
+        $data['session_year_id'] = $session_year;
 
         $cashbook = Cashbook::create($data);
 
@@ -67,7 +75,7 @@ class CashbookController extends Controller
         // Get all R&P entries with relationships
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('session_year_id', $session_filter)
-            ->where('account_type_id', $account_type)   
+            ->where('account_type_id', $account_type)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
@@ -290,6 +298,12 @@ class CashbookController extends Controller
 
     public function destroy(Cashbook $cashbook)
     {
+        $school_id = Auth::user()->school_id;
+
+        if ($cashbook->school_id !== $school_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $cashbook->delete();
 
         return redirect()
@@ -300,14 +314,25 @@ class CashbookController extends Controller
     public function print(Cashbook $cashbook)
     {
         // Get cashbook period
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
+
         $year = (int) $cashbook->period_year;
         $monthNumber = $this->getMonthNumber($cashbook->period_month);
 
         // Get all R&P entries with relationships
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
+
+        if(count($rpeEntries) > 0){
+            return  redirect()
+                ->back()
+                ->with('error', 'No entries found in the selected Receipt & Payment account.');
+        }
 
         // Filter and transform R&P entries to match cashbook entry format
         $receipts = $rpeEntries->where('type', 'receipt')
@@ -319,7 +344,11 @@ class CashbookController extends Controller
                     return $ppaDate->year == $year && $ppaDate->month == $monthNumber;
                 }
                 // If no PPA date, use created_at as fallback
-                return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
+                $rpe_month = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->month : null;
+                $rpe_year = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->year : null;
+                // If no PPA date, use created_at as fallback
+                return $rpe_year == $year && $rpe_month == $monthNumber;
+                // return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
             })
             ->map(function ($rpeEntry) {
                 // Extract PPA date from remarks, fallback to created_at
@@ -351,7 +380,11 @@ class CashbookController extends Controller
                     return $ppaDate->year == $year && $ppaDate->month == $monthNumber;
                 }
                 // If no PPA date, use created_at as fallback
-                return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
+                $rpe_month = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->month : null;
+                $rpe_year = $rpeEntry->date ? Carbon::parse($rpeEntry->date)->year : null;
+                // If no PPA date, use created_at as fallback
+                return $rpe_year == $year && $rpe_month == $monthNumber;
+                // return $rpeEntry->created_at->year == $year && $rpeEntry->created_at->month == $monthNumber;
             })
             ->map(function ($rpeEntry) {
                 // Extract PPA date from remarks, fallback to created_at
@@ -444,7 +477,7 @@ class CashbookController extends Controller
                 'total' => $runningReceiptTotal,
             ];
 
-            if($receiptChunks->first()){
+            if ($receiptChunks->first()) {
 
                 // Update running totals (opening balance + transactions)
                 // $runningReceiptCash += $pageReceiptCash;
@@ -592,7 +625,7 @@ class CashbookController extends Controller
         foreach ($receiptPages as $index  => $page) {
 
             // Pad payment pages to totalPages
-            if($index == 0){
+            if ($index == 0) {
                 $paymentPages[$index]['closing'] = [
                     'cash' => $page['closing']['cash'] + $page['opening']['cash'] - $paymentPages[$index]['opening']['cash'],
                     'bank' => $page['closing']['bank'] + $page['opening']['bank'] - $paymentPages[$index]['opening']['bank'],
@@ -603,12 +636,12 @@ class CashbookController extends Controller
 
             $receiptClosing = unserialize(serialize($page['closing']));
 
-            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index-1]['closing']));
+            $receiptPages[$index]['opening'] = unserialize(serialize($paymentPages[$index - 1]['closing']));
 
             $receiptPages[$index]['closing'] = [
-                'cash' => $receiptClosing['cash'] + $paymentPages[$index-1]['closing']['cash'],
-                'bank' => $receiptClosing['bank'] + $paymentPages[$index-1]['closing']['bank'],
-                'total' => $receiptClosing['total'] + $paymentPages[$index-1]['closing']['total'],
+                'cash' => $receiptClosing['cash'] + $paymentPages[$index - 1]['closing']['cash'],
+                'bank' => $receiptClosing['bank'] + $paymentPages[$index - 1]['closing']['bank'],
+                'total' => $receiptClosing['total'] + $paymentPages[$index - 1]['closing']['total'],
             ];
             // Pad receipt pages to totalPages
             $paymentPages[$index]['closing'] = [
@@ -616,7 +649,6 @@ class CashbookController extends Controller
                 'bank' => $receiptPages[$index]['closing']['bank'] - $paymentPages[$index]['opening']['bank'],
                 'total' => $receiptPages[$index]['closing']['total'] - $paymentPages[$index]['opening']['total'],
             ];
-
         }
 
         // dd($receiptPages, $paymentPages);
@@ -650,6 +682,8 @@ class CashbookController extends Controller
 
     public function processImport(Request $request, Cashbook $cashbook)
     {
+        $session_filter = session('session_id', current_session_year_id());
+        $account_type   = session('account_type', current_account_type_id());
         $request->validate([
             'receipt_payment_account_id' => ['required', 'exists:receipt_payment_accounts,id'],
         ]);
@@ -659,6 +693,8 @@ class CashbookController extends Controller
         // Get all receipt_payment_entries from the selected account with relationships
         $rpeEntries = ReceiptPaymentEntry::with(['article', 'beneficiary'])
             ->where('receipt_payment_account_id', $account->id)
+            ->where('session_year_id', $session_filter)
+            ->where('account_type_id', $account_type)
             ->with(['article', 'beneficiary'])
             ->get();
 
@@ -708,6 +744,9 @@ class CashbookController extends Controller
                     'tax_amount' => $rpeEntry->tax_amount,
                     'tax_for' => $rpeEntry->tax_for,
                     'tax_remark' => $rpeEntry->tax_remark,
+                    'account_type_id' => $account_type,
+                    'session_year_id' => $session_filter,
+                    'school_id' => auth()->user()->school_id,
                 ]);
 
                 $importedCount++;
@@ -747,8 +786,6 @@ class CashbookController extends Controller
 
         $createdCount = 0;
         $skippedCount = 0;
-        
-
 
         // Create cashbook for each month
         foreach ($months as $monthData) {
@@ -779,13 +816,16 @@ class CashbookController extends Controller
             }
         }
 
+        $startYear = date('Y');
+        $endYear = $startYear + 1;
+
         if ($createdCount > 0) {
-            $message = "Successfully created {$createdCount} cashbook(s) for financial year April 2025 - March 2026.";
+            $message = "Successfully created {$createdCount} cashbook(s) for financial year April {$startYear} - March {$endYear}.";
             if ($skippedCount > 0) {
                 $message .= " {$skippedCount} cashbook(s) already existed and were skipped.";
             }
         } else {
-            $message = "All 12 cashbooks for financial year April 2025 - March 2026 already exist. No new cashbooks created.";
+            $message = "All 12 cashbooks for financial year April {$startYear} - March {$endYear} already exist. No new cashbooks created.";
         }
 
         return redirect()

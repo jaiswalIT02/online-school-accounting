@@ -10,7 +10,57 @@
     @if (session('status'))
     <div class="alert alert-success">{{ session('status') }}</div>
     @endif
-   
+    @php
+    $session_filter = session('session_id', current_session_year_id());
+    $account_type = session('account_type', current_account_type_id());
+
+    $ledgerCount = \App\Models\Ledger::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $cashbookCount = \App\Models\Cashbook::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $rpAcCount = \App\Models\ReceiptPaymentAccount::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $fundCount = \App\Models\Fund::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->count();
+
+    $ledgerEntryCount = \App\Models\LedgerEntry::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $cashbookEntryCount = \App\Models\CashbookEntry::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $rpEntryCount = \App\Models\ReceiptPaymentEntry::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->where('account_type_id', $account_type)
+    ->count();
+
+    $fundSum = \App\Models\Fund::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->sum('amount');
+
+    $beneficiariesCount = \App\Models\Beneficiary::where('school_id', auth()->user()->school_id)
+    ->where('session_year_id', $session_filter)
+    ->count();
+
+    $articleCount = \App\Models\Article::where('school_id', auth()->user()->school_id)
+    ->count();
+
+    @endphp
+
     <!-- Quick Stats -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -18,7 +68,7 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Ledgers</h5>
                     <h3 class="mb-0 text-primary">
-                        {{ \App\Models\Ledger::count() }}
+                        {{ $ledgerCount }}
                     </h3>
                     <a href="{{ route('ledgers.index') }}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
                 </div>
@@ -28,7 +78,7 @@
             <div class="card text-center border-success">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Cashbooks</h5>
-                    <h3 class="mb-0 text-success">{{ \App\Models\Cashbook::count() }}</h3>
+                    <h3 class="mb-0 text-success">{{ $cashbookCount }}</h3>
                     <a href="{{ route('cashbooks.index') }}" class="btn btn-sm btn-outline-success mt-2">View All</a>
                 </div>
             </div>
@@ -37,7 +87,7 @@
             <div class="card text-center border-info">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Receipt & Payment</h5>
-                    <h3 class="mb-0 text-info">{{ \App\Models\ReceiptPaymentAccount::count() }}</h3>
+                    <h3 class="mb-0 text-info">{{ $rpAcCount }}</h3>
                     <a href="{{ route('receipt_payments.index') }}" class="btn btn-sm btn-outline-info mt-2">View All</a>
                 </div>
             </div>
@@ -46,7 +96,7 @@
             <div class="card text-center border-warning">
                 <div class="card-body">
                     <h5 class="card-title text-muted mb-2">Funds</h5>
-                    <h3 class="mb-0 text-warning">{{ \App\Models\Fund::count() }}</h3>
+                    <h3 class="mb-0 text-warning">{{ $fundCount }}</h3>
                     <a href="{{ route('funds.index') }}" class="btn btn-sm btn-outline-warning mt-2">View All</a>
                 </div>
             </div>
@@ -94,37 +144,37 @@
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Ledger Entries</span>
-                                <strong>{{ \App\Models\LedgerEntry::count() }}</strong>
+                                <strong>{{ $ledgerEntryCount }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Cashbook Entries</span>
-                                <strong>{{ \App\Models\CashbookEntry::count() }}</strong>
+                                <strong>{{ $cashbookEntryCount }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Receipt & Payment Entries</span>
-                                <strong>{{ \App\Models\ReceiptPaymentEntryTest::count() }}</strong>
+                                <strong>{{ $rpEntryCount }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Components</span>
-                                <strong>{{ \App\Models\Article::count() }}</strong>
+                                <strong>{{ $articleCount }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Vendors</span>
-                                <strong>{{ \App\Models\Beneficiary::count() }}</strong>
+                                <strong>{{ $beneficiariesCount }}</strong>
                             </div>
                         </div>
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between">
                                 <span>Total Funds Amount</span>
-                                <strong>₹{{ number_format(\App\Models\Fund::sum('amount'), 2) }}</strong>
+                                <strong>₹{{ number_format($fundSum, 2) }}</strong>
                             </div>
                         </div>
                     </div>

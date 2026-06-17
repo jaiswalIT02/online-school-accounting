@@ -3,80 +3,47 @@
 @section('content')
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Edit Ledger</h4>
-        <a class="btn btn-outline-secondary" href="{{ route('ledgers.show', $ledger) }}">Back</a>
+        <h4 class="mb-0">Edit Account</h4>
+        <a class="btn btn-outline-secondary" href="{{ route('accounts.index') }}">Back</a>
     </div>
 
+    {{-- {{ DD($account) }} --}}
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ route('ledgers.update', $ledger) }}">
+            <form method="POST" action="{{ route('accounts.update', $account->id) }}">
                 @csrf
-                @method('PUT')
-                <div class="mb-3">
-                    <label class="form-label" for="name">Ledger Name</label>
-                    <select
-                        class="form-select @error('name') is-invalid @enderror"
-                        id="name"
-                        name="name"
-                        required>
-                        <option value="">-- Select Component --</option>
-                        @foreach ($articles ?? [] as $article)
-                        <option value="{{ $article->name }}"
-                            @selected(trim(old('name', $ledger->name)) === trim($article->name))>
-                            {{ $article->name }} ({{ $article->acode }})
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('name')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
+                 @method('PUT')
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label" for="opening_balance">Opening Balance</label>
+                        <label class="form-label" for="name">Account Name</label>
                         <input
-                            class="form-control @error('opening_balance') is-invalid @enderror"
-                            id="opening_balance"
-                            name="opening_balance"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value="{{ old('opening_balance', $ledger->opening_balance ?? '0.00') }}">
-                        @error('opening_balance')
+                            class="form-control @error('name') is-invalid @enderror"
+                            id="name"
+                            name="name"
+                            type="text"
+
+                            value="{{ old('name', $account->name ?? '') }}">
+                        @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
                     <div class="col-md-6 mb-3">
-                        <label class="form-label" for="opening_balance_type">Opening Type</label>
-                        <select
-                            class="form-select @error('opening_balance_type') is-invalid @enderror"
-                            id="opening_balance_type"
-                            name="opening_balance_type"
-                            required>
-                            @php($selectedType = old('opening_balance_type', $ledger->opening_balance_type ?? 'Dr'))
-                            <option value="Dr" @selected($selectedType==='Dr' )>Dr</option>
-                            <option value="Cr" @selected($selectedType==='Cr' )>Cr</option>
-                        </select>
-                        @error('opening_balance_type')
+                        <label class="form-label" for="slug">Account Slug</label>
+                        <input
+                            class="form-control @error('slug') is-invalid @enderror"
+                            id="slug"
+                            name="slug"
+                            type="text"
+                            value="{{ old('slug', $account->slug ?? '') }}">
+                        @error('slug')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label" for="description">Description</label>
-                    <textarea
-                        class="form-control @error('description') is-invalid @enderror"
-                        id="description"
-                        name="description"
-                        rows="3">{{ old('description', $ledger->description ?? '') }}</textarea>
-                    @error('description')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
                 <div class="d-flex justify-content-end">
-                    <button class="btn btn-primary" type="submit">Update Ledger</button>
+                    <button class="btn btn-primary" type="submit">Update Account</button>
                 </div>
             </form>
         </div>
