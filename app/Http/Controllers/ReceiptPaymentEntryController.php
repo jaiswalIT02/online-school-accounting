@@ -7,6 +7,7 @@ use App\Models\Beneficiary;
 use App\Models\ReceiptPaymentAccount;
 use App\Models\ReceiptPaymentEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReceiptPaymentEntryController extends Controller
@@ -73,119 +74,128 @@ class ReceiptPaymentEntryController extends Controller
 
     public function store(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
-        $account_type = session('account_type', current_account_type_id());
-        $session_year = session('session_id', current_session_year_id());
-        $data = $this->validateEntry($request);
-        $data['account_id'] = $receipt_payment->id;
+        try{
+            DB::beginTransaction();
+        
+            $account_type = session('account_type', current_account_type_id());
+            $session_year = session('session_id', current_session_year_id());
+            $data = $this->validateEntry($request);
+            $data['account_id'] = $receipt_payment->id;
 
-        // Extract transaction ID from remarks (format: "Txn ID: 32937166")
-        $txnId = null;
-        if ($data['remarks'] && preg_match('/Txn ID:\s*(\d+)/i', $data['remarks'], $matches)) {
-            $txnId = $matches[1];
-        }
-
-        // Use date from input if provided, otherwise extract PPA date from remarks
-        $ppaDate = !empty($data['date'])
-            ? $data['date']
-            : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
-
-        $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
-
-        // dd($ppaDate);
-        // If type is 'both', create both payment and receipt entries
-        if ($data['type'] === 'both') {
-            $entryData = [
-                'account_id' => $receipt_payment->id,
-                'article_id' => $data['article_id'] ?? null,
-                'beneficiary_id' => $data['beneficiary_id'] ?? null,
-                'particular_name' => $data['particular_name'],
-                // 'acode' => $data['acode'],
-                'amount' => $data['amount'],
-                'remarks' => $data['remarks'] ?? null,
-                'date' => $ppaDate, // Store date in dd/mm/yyyy format
-                'tax_amount' => $data['tax_amount'] ?? null,
-                'tax_for' => $data['tax_for'] ?? null,
-                'tax_type' => $data['tax_type'] ?? null,
-                'tax_remark' => $data['tax_remark'] ?? null,
-                'pair_id' => $txnId, // Store transaction ID in pair_id
-                'account_type_id' => $account_type,
-                'session_year_id' => $session_year,
-            ];
-
-            // dd($receipt_payment->entries());
-
-            // Create receipt entry first
-            $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
-                'type' => 'receipt',
-            ]));
-
-            // Create payment entry with same transaction ID in pair_id
-            $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
-
-            return redirect()
-                ->route('receipt_payments.show', $receipt_payment)
-                ->with('status', 'Entry added as both payment and receipt.');
-        } else if ($data['type'] === 'receipt') {
-
-            $entryData = [
-                'account_id' => $receipt_payment->id,
-                'article_id' => $data['article_id'] ?? null,
-                'beneficiary_id' => $data['beneficiary_id'] ?? null,
-                'particular_name' => $data['particular_name'],
-                'acode' => $data['acode'],
-                'amount' => $data['amount'],
-                'remarks' => $data['remarks'] ?? null,
-                'date' => $ppaDate, // Store date in dd/mm/yyyy format
-                'tax_amount' => $data['tax_amount'] ?? null,
-                'tax_for' => $data['tax_for'] ?? null,
-                'tax_type' => $data['tax_type'] ?? null,
-                'tax_remark' => $data['tax_remark'] ?? null,
-                'pair_id' => $txnId, // Store transaction ID in pair_id
-            ];
-
-            // Create receipt entry first
-            $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
-                'type' => 'receipt',
-            ]));
-
-            return redirect()
-                ->route('receipt.create', ['account_type' => 2, $receipt_payment])
-                ->with('status', 'Entry added as receipt.');
-        } else if ($data['type'] === 'payment') {
-
-            $entryData = [
-                'account_id' => $receipt_payment->id,
-                'article_id' => $data['article_id'] ?? null,
-                'beneficiary_id' => $data['beneficiary_id'] ?? null,
-                'particular_name' => $data['particular_name'],
-                'acode' => $data['acode'],
-                'amount' => $data['amount'],
-                'remarks' => $data['remarks'] ?? null,
-                'date' => $ppaDate, // Store date in dd/mm/yyyy format
-                'tax_amount' => $data['tax_amount'] ?? null,
-                'tax_for' => $data['tax_for'] ?? null,
-                'tax_type' => $data['tax_type'] ?? null,
-                'tax_remark' => $data['tax_remark'] ?? null,
-                'pair_id' => $txnId, // Store transaction ID in pair_id
-            ];
-
-            $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
-
-            return redirect()
-                ->route('payment.create', ['account_type' => 2,  $receipt_payment])
-                ->with('status', 'Entry added as payment.');
-        } else {
-            // Single entry (payment or receipt) - store transaction ID in pair_id if available
-            if ($txnId) {
-                $data['pair_id'] = $txnId;
+            // Extract transaction ID from remarks (format: "Txn ID: 32937166")
+            $txnId = null;
+            if ($data['remarks'] && preg_match('/Txn ID:\s*(\d+)/i', $data['remarks'], $matches)) {
+                $txnId = $matches[1];
             }
-            // Add date to data (from input or extracted from remarks)
-            $data['date'] = $ppaDate;
-            $receipt_payment->entries()->create($data);
 
-            return redirect()
-                ->route('receipt_payments.show', $receipt_payment)
-                ->with('status', 'Entry added.');
+            // Use date from input if provided, otherwise extract PPA date from remarks
+            $ppaDate = !empty($data['date'])
+                ? $data['date']
+                : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
+
+            $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
+
+            // dd($ppaDate);
+            // If type is 'both', create both payment and receipt entries
+            if ($data['type'] === 'both') {
+                $entryData = [
+                    'account_id' => $receipt_payment->id,
+                    'article_id' => $data['article_id'] ?? null,
+                    'beneficiary_id' => $data['beneficiary_id'] ?? null,
+                    'particular_name' => $data['particular_name'],
+                    // 'acode' => $data['acode'],
+                    'amount' => $data['amount'],
+                    'remarks' => $data['remarks'] ?? null,
+                    'date' => $ppaDate, // Store date in dd/mm/yyyy format
+                    'tax_amount' => $data['tax_amount'] ?? null,
+                    'tax_for' => $data['tax_for'] ?? null,
+                    'tax_type' => $data['tax_type'] ?? null,
+                    'tax_remark' => $data['tax_remark'] ?? null,
+                    'pair_id' => $txnId, // Store transaction ID in pair_id
+                    'account_type_id' => $account_type,
+                    'session_year_id' => $session_year,
+                ];
+
+                // dd($receipt_payment->entries());
+
+                // Create receipt entry first
+                $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
+                    'type' => 'receipt',
+                ]));
+
+                // Create payment entry with same transaction ID in pair_id
+                $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
+                DB::commit();
+                return redirect()
+                    ->route('receipt_payments.show', $receipt_payment)
+                    ->with('status', 'Entry added as both payment and receipt.');
+            } else if ($data['type'] === 'receipt') {
+
+                $entryData = [
+                    'account_id' => $receipt_payment->id,
+                    'article_id' => $data['article_id'] ?? null,
+                    'beneficiary_id' => $data['beneficiary_id'] ?? null,
+                    'particular_name' => $data['particular_name'],
+                    'acode' => $data['acode'],
+                    'amount' => $data['amount'],
+                    'remarks' => $data['remarks'] ?? null,
+                    'date' => $ppaDate, // Store date in dd/mm/yyyy format
+                    'tax_amount' => $data['tax_amount'] ?? null,
+                    'tax_for' => $data['tax_for'] ?? null,
+                    'tax_type' => $data['tax_type'] ?? null,
+                    'tax_remark' => $data['tax_remark'] ?? null,
+                    'pair_id' => $txnId, // Store transaction ID in pair_id
+                ];
+
+                // Create receipt entry first
+                $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
+                    'type' => 'receipt',
+                ]));
+                DB::commit();
+                return redirect()
+                    ->route('receipt.create', ['account_type' => 2, $receipt_payment])
+                    ->with('status', 'Entry added as receipt.');
+            } else if ($data['type'] === 'payment') {
+
+                $entryData = [
+                    'account_id' => $receipt_payment->id,
+                    'article_id' => $data['article_id'] ?? null,
+                    'beneficiary_id' => $data['beneficiary_id'] ?? null,
+                    'particular_name' => $data['particular_name'],
+                    'acode' => $data['acode'],
+                    'amount' => $data['amount'],
+                    'remarks' => $data['remarks'] ?? null,
+                    'date' => $ppaDate, // Store date in dd/mm/yyyy format
+                    'tax_amount' => $data['tax_amount'] ?? null,
+                    'tax_for' => $data['tax_for'] ?? null,
+                    'tax_type' => $data['tax_type'] ?? null,
+                    'tax_remark' => $data['tax_remark'] ?? null,
+                    'pair_id' => $txnId, // Store transaction ID in pair_id
+                ];
+
+                $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
+
+                DB::commit();
+                return redirect()
+                    ->route('payment.create', ['account_type' => 2,  $receipt_payment])
+                    ->with('status', 'Entry added as payment.');
+            } else {
+                // Single entry (payment or receipt) - store transaction ID in pair_id if available
+                if ($txnId) {
+                    $data['pair_id'] = $txnId;
+                }
+                // Add date to data (from input or extracted from remarks)
+                $data['date'] = $ppaDate;
+                $receipt_payment->entries()->create($data);
+                DB::commit();
+                return redirect()
+                    ->route('receipt_payments.show', $receipt_payment)
+                    ->with('status', 'Entry added.');
+            }
+            
+        }catch(\Exception $e){
+            DB::rollBack();
+            throw $e;
         }
     }
 
