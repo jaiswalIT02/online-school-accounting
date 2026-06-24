@@ -405,6 +405,7 @@ class PdfExtractController extends Controller
     private function saveExtractedData(ReceiptPaymentAccount $account, $extractedData)
     {
         $savedCount = 0;
+        // dd($account);
         foreach ($extractedData as $data) {
             if (!empty($data['name']) && isset($data['amount']) && $data['amount'] > 0) {
                 try {
@@ -429,6 +430,8 @@ class PdfExtractController extends Controller
                             $ppaDate = $dateStr;
                         }
                     }
+
+                    $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
                     
                     $txnId = $data['txn_id'] ?? null;
                     $remarksParts[] = 'Txn ID: ' . ($txnId ?? 'N/A');
@@ -437,7 +440,7 @@ class PdfExtractController extends Controller
                     
                     // Create both RECEIPT and PAYMENT entries with transaction ID in pair_id
                     $entryData = [
-                        'receipt_payment_account_id' => $account->id,
+                        'account_id' => $account->id,
                         'particular_name' => $data['name'],
                         'acode' => $data['ifsc'] ?? '',
                         'amount' => $data['amount'],
@@ -445,6 +448,8 @@ class PdfExtractController extends Controller
                         'date' => $ppaDate, // Store PPA date in dd/mm/yyyy format
                         'pair_id' => $txnId, // Store transaction ID in pair_id
                     ];
+
+                    // dd($entryData);
                     
                     // Create receipt entry first
                     $receiptEntry = ReceiptPaymentEntry::create(array_merge($entryData, [
@@ -460,6 +465,7 @@ class PdfExtractController extends Controller
                     Log::error('Failed to save PDF extracted entry: ' . $e->getMessage());
                     Log::error('Entry data: ' . json_encode($entryData));
                     Log::error('Stack trace: ' . $e->getTraceAsString());
+                    throw $e; // Rethrow the exception to be handled by the caller
                 }
             }
         }
@@ -472,9 +478,10 @@ class PdfExtractController extends Controller
             'receipt_payment_account_id' => ['required', 'exists:receipt_payment_accounts,id'],
             'extracted_data' => ['required', 'json'],
         ]);
-
+            
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
         $extractedData = json_decode($request->extracted_data, true);
+        // dd($account, $extractedData);
 
         if (!is_array($extractedData)) {
             return back()->withErrors(['extracted_data' => 'Invalid data format.']);

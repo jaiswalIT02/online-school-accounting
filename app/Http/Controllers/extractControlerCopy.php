@@ -464,10 +464,12 @@ class PdfExtractController extends Controller
 
     public function save(Request $request)
     {
+        
         $request->validate([
             'receipt_payment_account_id' => ['required', 'exists:receipt_payment_accounts,id'],
             'extracted_data' => ['required', 'json'],
         ]);
+
 
         $account = ReceiptPaymentAccount::findOrFail($request->receipt_payment_account_id);
         $extractedData = json_decode($request->extracted_data, true);

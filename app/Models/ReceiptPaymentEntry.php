@@ -17,7 +17,7 @@ class ReceiptPaymentEntry extends Model
     use HasFactory, HasSessionYear, AutoAssignSessionYear, HasAccountType, AutoAssignAccountType;
 
     protected $fillable = [
-        'receipt_payment_account_id',
+        'account_id',
         'type',
         'particular_name',
         // 'acode',
