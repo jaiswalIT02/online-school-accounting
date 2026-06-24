@@ -111,7 +111,7 @@ class ReceiptPaymentEntry extends Model
 
     public function account()
     {
-        return $this->belongsTo(ReceiptPaymentAccount::class, 'receipt_payment_account_id');
+        return $this->belongsTo(ReceiptPaymentAccount::class, 'account_id');
     }
 
     /**

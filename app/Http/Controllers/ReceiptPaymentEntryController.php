@@ -202,6 +202,7 @@ class ReceiptPaymentEntryController extends Controller
     public function edit(ReceiptPaymentEntry $entry)
     {
         $receipt_payment = $entry->account;
+        // dd($receipt_payment);
         $articles = Article::orderBy('name')->get();
         $beneficiaries = Beneficiary::orderBy('name')->get();
 

@@ -13,7 +13,9 @@ class PdfExtractController extends Controller
 {
     public function index(Request $request)
     {
-        $accounts = ReceiptPaymentAccount::orderByDesc('period_from')->get();
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
+        $accounts = ReceiptPaymentAccount::where('session_year_id', $session_year)->orderByDesc('period_from')->get();
         $selectedAccountId = $request->get('account_id');
         return view('pdf_extract.index', compact('accounts', 'selectedAccountId'));
     }
@@ -405,6 +407,8 @@ class PdfExtractController extends Controller
     private function saveExtractedData(ReceiptPaymentAccount $account, $extractedData)
     {
         $savedCount = 0;
+        $account_type = session('account_type', current_account_type_id());
+        $session_year = session('session_id', current_session_year_id());
         // dd($account);
         foreach ($extractedData as $data) {
             if (!empty($data['name']) && isset($data['amount']) && $data['amount'] > 0) {
@@ -447,6 +451,8 @@ class PdfExtractController extends Controller
                         'remarks' => $remarks,
                         'date' => $ppaDate, // Store PPA date in dd/mm/yyyy format
                         'pair_id' => $txnId, // Store transaction ID in pair_id
+                        'account_type_id' => $account_type,
+                        'session_year_id' => $session_year,
                     ];
 
                     // dd($entryData);
