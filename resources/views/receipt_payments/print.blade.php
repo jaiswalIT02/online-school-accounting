@@ -432,7 +432,7 @@
                 <thead>
                     <tr>
                         <th style="width: 63%">Particulars</th>
-                        <th style="width: 20%">A. Code</th>
+                        <th style="width: 20%">Component Code</th>
                         <th style="width: 17%" class="text-right">Amount</th>
                     </tr>
                 </thead>
@@ -479,7 +479,7 @@
                 <thead>
                     <tr>
                         <th style="width: 63%">Particulars</th>
-                        <th style="width: 20%">A. Code</th>
+                        <th style="width: 20%">Component Code</th>
                         <th style="width: 17%" class="text-right">Amount</th>
                     </tr>
                 </thead>

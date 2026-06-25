@@ -328,7 +328,7 @@ class CashbookController extends Controller
             ->orderBy('id')
             ->get();
 
-        if(count($rpeEntries) > 0){
+        if(count($rpeEntries) === 0){
             return  redirect()
                 ->back()
                 ->with('error', 'No entries found in the selected Receipt & Payment account.');

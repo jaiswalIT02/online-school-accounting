@@ -534,7 +534,7 @@ class ReceiptPaymentEntryController extends Controller
             'article_ref' => ['nullable', 'string', 'max:255'],
             'beneficiary_ref' => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'date' => ['nullable', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'],
+            'date' => ['nullable', 'date'],
             'remarks' => ['nullable', 'string', 'max:1000'],
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_for' => ['nullable', 'in:tds,pTax'],

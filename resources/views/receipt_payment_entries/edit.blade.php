@@ -110,10 +110,10 @@
                             class="form-control @error('date') is-invalid @enderror"
                             id="date"
                             name="date"
-                            type="text"
+                            type="date"
                             placeholder="dd/mm/yyyy"
                             value="{{ old('date', $entry->date) }}"
-                            pattern="\d{2}/\d{2}/\d{4}"
+                            {{-- pattern="\d{2}/\d{2}/\d{4}" --}}
                         >
                         @error('date')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -221,7 +221,7 @@
     </div>
 </div>
 
-<script>
+{{-- <script>
 // Auto-format date input to dd/mm/yyyy
 document.getElementById('date')?.addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
@@ -233,5 +233,5 @@ document.getElementById('date')?.addEventListener('input', function(e) {
     }
     e.target.value = value;
 });
-</script>
+</script> --}}
 @endsection
