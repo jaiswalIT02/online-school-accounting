@@ -794,8 +794,8 @@
                     </table>
                 </div>
             </div>
+            <div>Page {{ $currentPageNumber}}  <span style="float: right;">Printed On :{{ date('d/m/Y h:i A') }}</span></div>
         </div>
-        <div>Page {{ $currentPageNumber}}</div>
     @endfor
     
     {{-- Height for table rows/cells is defined only in @media print (lines 64-73) --}}

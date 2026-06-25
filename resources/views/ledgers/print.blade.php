@@ -224,9 +224,13 @@
     
     {{-- <div class="page-number">11</div> --}}
     @php
-        $pageNumber = 1;
+        $pageNumber = 0;
     @endphp
     @foreach($pages as $index => $items)
+    @php
+    $pageNumber = $index+1;
+    @endphp
+    <div>Page {{ $pageNumber }}  <span style="float: right;">Printed On :{{ date('d/m/Y h:i A') }}</span></div>
     <div class="ledger-header">
         <div class="ledger-title">
             <span class="label">LEDGER A/C. of</span>
@@ -264,9 +268,7 @@
                 </th>
             </tr>
         </thead>
-        <tbody> 
-            
-                
+        <tbody>            
                 <tr style="background: #f0f0f0; font-weight: bold;">
                     <td class="date-col"  style="text-align: center; padding-right: 8px;">{{ $items['opening_date']->format('d/m/y')}}</td>
                     <td class="date-col" style="text-align: left; padding-right: 8px;">Opening Balance</td>
@@ -475,6 +477,7 @@
                     </div>
                 </td>
             </tr> --}}
+        
         </tbody>
     </table>
      @endforeach

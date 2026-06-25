@@ -14,6 +14,6 @@ return [
     |
     */
 
-    'print_rows_per_page' => (int) env('CASHBOOK_PRINT_ROWS_PER_PAGE', 6),
+    'print_rows_per_page' => (int) env('CASHBOOK_PRINT_ROWS_PER_PAGE', 5),
 
 ];

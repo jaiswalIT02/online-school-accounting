@@ -212,7 +212,14 @@
         </div>
         <div class="page-number">1</div>
     </div> --}}
+    @php
+        $pageNumber = 0;
+    @endphp
     @foreach($pages as $index => $items)
+    @php
+        $pageNumber = $index + 1;
+    @endphp
+    <div>Page {{ $pageNumber }}  <span style="float: right;">Printed On :{{ date('d/m/Y h:i A') }}</span></div>
     <div class="ledger-header">
         <div class="ledger-title">
             <span class="label">TAX LEDGER A/C. of</span>
@@ -355,8 +362,14 @@
                     <div style="text-align: center; font-size: 9pt; margin-top: 2px;">{{ $closingBalanceType ?? 'Cr' }}</div>
                 </td>
             </tr>
+             @if ($index < $pages->count() - 1)
+                    <tr style="page-break-after: always;">
+                        <td colspan="8"></td>
+                    </tr>
+                @endif
         </tbody>
     </table>
+   
     @endforeach
 
     <div class="decorative-border"></div>
