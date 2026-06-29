@@ -63,8 +63,11 @@
                         @if($accountType == 1)
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => $accountType, 'id' => $accountType]) }}">
+                            {{-- <a class="nav-link" href="{{ route('receipt_payments.index', ['account_type' => $accountType, 'id' => $accountType]) }}">
                                 Receipt&nbsp;&&nbsp;Payment
+                            </a> --}}
+                             <a class="nav-link" href="{{ route('accounts.index', ['account_type' => $accountType, 'id' => $accountType]) }}">
+                                Accounts
                             </a>
                         </li>
 
@@ -82,8 +85,11 @@
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('receipt_payments.index') }}">
+                            {{-- <a class="nav-link" href="{{ route('receipt_payments.index') }}">
                                 Receipt&nbsp;&&nbsp;Payment
+                            </a> --}}
+                            <a class="nav-link" href="{{ route('accounts.index') }}">
+                                Accounts
                             </a>
                         </li>
                         @endif
