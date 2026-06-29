@@ -26,7 +26,7 @@ ADD COLUMN IF NOT EXISTS account_type_id BIGINT NULL;
 UPDATE receipt_payment_entries
 SET
     school_id = 1,
-    session_year_id = 187,
+    session_year_id = 7,
     account_type_id = 1;
 
 -- =====================================================
