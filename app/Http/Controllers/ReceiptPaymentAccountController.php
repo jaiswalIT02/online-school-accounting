@@ -58,7 +58,13 @@ class ReceiptPaymentAccountController extends Controller
 
     public function show(ReceiptPaymentAccount $receipt_payment)
     {
-        $entries = $receipt_payment->entries()
+        // $entries = $receipt_payment->entries()
+        //     ->with(['article', 'beneficiary'])
+        //     ->orderByDesc('id')
+        //     ->get();
+
+        $entries = ReceiptPaymentEntry::where('date', '>=', $receipt_payment->period_from)->where('date', '<=', $receipt_payment->period_to)
+            ->where('account_id', $receipt_payment->account_id) // Use account_id from ReceiptPaymentAccount
             ->with(['article', 'beneficiary'])
             ->orderByDesc('id')
             ->get();
@@ -82,9 +88,15 @@ class ReceiptPaymentAccountController extends Controller
 
     public function print(Request $request, ReceiptPaymentAccount $receipt_payment)
     {
-        $entries = $receipt_payment->entries()
+        // $entries = $receipt_payment->entries()
+        //     ->with(['article', 'beneficiary'])
+        //     ->orderBy('id')
+        //     ->get();
+
+        $entries = ReceiptPaymentEntry::where('date', '>=', $receipt_payment->period_from)->where('date', '<=', $receipt_payment->period_to)
+            ->where('account_id', $receipt_payment->account_id) // Use account_id from ReceiptPaymentAccount
             ->with(['article', 'beneficiary'])
-            ->orderBy('id')
+            ->orderByDesc('id')
             ->get();
 
         // Apply month filters if provided

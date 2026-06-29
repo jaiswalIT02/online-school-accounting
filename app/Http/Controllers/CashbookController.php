@@ -79,6 +79,8 @@ class CashbookController extends Controller
             ->orderBy('created_at')
             ->orderBy('id')
             ->get();
+        
+        dd($rpeEntries->toArray());
 
         // Filter and transform R&P entries to match cashbook entry format
         $receipts = $rpeEntries->where('type', 'receipt')

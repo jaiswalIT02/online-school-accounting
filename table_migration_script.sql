@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS schools (
 INSERT IGNORE INTO schools
 (name, slug, registerred_date, status, created_at, updated_at)
 VALUES
-('KGBVDKJ', 'kgbvdkj', '2021-02-01', 1, NOW(), NOW()),
+('KGBV RESIDENTIAL SCHOOL, DHEKIAJULI', 'kgbvdkj', '2021-02-01', 1, NOW(), NOW()),
 ('ABC School', 'abc-school', '2022-03-15', 1, NOW(), NOW());
 
 CREATE TABLE IF NOT EXISTS account_types (

@@ -444,7 +444,7 @@ class PdfExtractController extends Controller
                     
                     // Create both RECEIPT and PAYMENT entries with transaction ID in pair_id
                     $entryData = [
-                        'account_id' => $account->id,
+                        'account_id' => $account->account_id,
                         'particular_name' => $data['name'],
                         'acode' => $data['ifsc'] ?? '',
                         'amount' => $data['amount'],

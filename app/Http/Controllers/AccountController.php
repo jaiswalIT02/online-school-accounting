@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\ReceiptPaymentAccount;
+use App\Models\Schools;
 use App\Models\SessionYear;
 use Carbon\Carbon;
 use Exception;
@@ -64,6 +65,13 @@ class AccountController extends Controller
             $start = Carbon::parse($currentSession['start_date']);
             $end   = Carbon::parse($currentSession['end_date']);
 
+            $school = Schools::select('name')->where('id', $schoolId)->first();
+
+            $schoolName = $school->name;
+
+            $receptPaymentName = "RECEIPT AND PAYMENT ACCOUNT OF " . $schoolName;
+
+
             /*
         |--------------------------------------------------------------------------
         | 1️⃣ Annual Entry (Dynamic)
@@ -72,7 +80,7 @@ class AccountController extends Controller
 
             ReceiptPaymentAccount::create([
                 'account_id'    => $accountId->id,
-                'name' => 'Annual Receipt & Payment',
+                'name' => $receptPaymentName, //'Annual Receipt & Payment',
                 'header_title' => 'Annual Report',
                 'header_subtitle' => $currentSession['session_name'],
                 'period_from' => $start,
@@ -93,12 +101,12 @@ class AccountController extends Controller
 
             $halves = [
                 [
-                    'name' => 'Half Year 1',
+                    'name' => $receptPaymentName, // 'Half Year 1',
                     'from' => $start,
                     'to'   => $midPoint,
                 ],
                 [
-                    'name' => 'Half Year 2',
+                    'name' => $receptPaymentName, //'Half Year 2',
                     'from' => $midPoint->copy()->addDay(),
                     'to'   => $end,
                 ]
@@ -133,7 +141,7 @@ class AccountController extends Controller
 
                 ReceiptPaymentAccount::create([
                     'account_id'    => $accountId->id,
-                    'name' => 'Q' . $i,
+                    'name' => $receptPaymentName, //'Q' . $i,
                     'header_title' => 'Quarterly Report',
                     'header_subtitle' => 'Q' . $i,
                     'period_from' => $quarterStart,

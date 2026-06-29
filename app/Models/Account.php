@@ -32,4 +32,14 @@ class Account extends Model
             }
         });
     }
+
+    public function receiptPaymentAccounts()
+    {
+        return $this->hasMany(ReceiptPaymentAccount::class);
+    }
+
+    public function entries()
+    {
+        return $this->hasMany(ReceiptPaymentEntry::class);
+    }
 }

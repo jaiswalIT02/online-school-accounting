@@ -34,10 +34,10 @@ class ReceiptPaymentAccount extends Model
         'date' => 'date',
     ];
 
-    public function entries()
-    {
-        return $this->hasMany(ReceiptPaymentEntry::class, 'account_id');
-    }
+    // public function entries()
+    // {
+    //     return $this->hasMany(ReceiptPaymentEntry::class, 'account_id');
+    // }
 
     protected static function booted()
     {
@@ -52,5 +52,10 @@ class ReceiptPaymentAccount extends Model
                 $model->school_id = Auth::user()->school_id;
             }
         });
+    }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class, 'account_id');
     }
 }

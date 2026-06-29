@@ -146,6 +146,27 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+
+UPDATE receipt_payment_entries
+SET
+    school_id = 1,
+    session_year_id = 7,
+    account_type_id = 1
+WHERE school_id IS NULL
+   OR session_year_id IS NULL
+   OR account_type_id IS NULL;
+
+UPDATE funds
+SET
+    school_id = 1,
+    session_year_id = 7
+WHERE school_id IS NULL
+   OR session_year_id IS NULL;
+
+UPDATE `funds` SET `component_type`='non-salary' WHERE component_type IS NULL;
+
+UPDATE receipt_payment_accounts SET school_id = 1, session_year_id = 7, account_type_id = 1, account_id = 1 WHERE school_id IS NULL OR session_year_id IS NULL OR account_type_id IS NULL;
+
 COMMIT;
 
 -- =====================================================

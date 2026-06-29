@@ -87,19 +87,21 @@ class ReceiptPaymentEntryController extends Controller
             if ($data['remarks'] && preg_match('/Txn ID:\s*(\d+)/i', $data['remarks'], $matches)) {
                 $txnId = $matches[1];
             }
+            // dd($data);
 
             // Use date from input if provided, otherwise extract PPA date from remarks
             $ppaDate = !empty($data['date'])
                 ? $data['date']
                 : $this->extractPpaDateFromRemarks($data['remarks'] ?? null);
+            // dd($ppaDate);
 
-            $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
+            // $ppaDate = \DateTime::createFromFormat('d/m/Y', $ppaDate)->format('Y-m-d');
 
             // dd($ppaDate);
             // If type is 'both', create both payment and receipt entries
             if ($data['type'] === 'both') {
                 $entryData = [
-                    'account_id' => $receipt_payment->id,
+                    'account_id' => $receipt_payment->account_id,
                     'article_id' => $data['article_id'] ?? null,
                     'beneficiary_id' => $data['beneficiary_id'] ?? null,
                     'particular_name' => $data['particular_name'],
@@ -119,12 +121,12 @@ class ReceiptPaymentEntryController extends Controller
                 // dd($receipt_payment->entries());
 
                 // Create receipt entry first
-                $receiptEntry = $receipt_payment->entries()->create(array_merge($entryData, [
+                $receiptEntry = $receipt_payment->account->entries()->create(array_merge($entryData, [
                     'type' => 'receipt',
                 ]));
 
                 // Create payment entry with same transaction ID in pair_id
-                $paymentEntry = $receipt_payment->entries()->create(array_merge($entryData, ['type' => 'payment']));
+                $paymentEntry = $receipt_payment->account->entries()->create(array_merge($entryData, ['type' => 'payment']));
                 DB::commit();
                 return redirect()
                     ->route('receipt_payments.show', $receipt_payment)
