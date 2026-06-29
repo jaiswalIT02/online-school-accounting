@@ -270,7 +270,10 @@ class FundController extends Controller
 
             return redirect()
                 ->route('funds.index')
-                ->with('status', "Import completed successfully! Total rows: {$result['total_rows']}, Inserted: {$result['inserted']}, Skipped: {$result['skipped']}")
+                ->with(
+                    'status',
+                    "Import completed successfully! Total rows: {$result['total_rows']}, Inserted: {$result['inserted']}, Skipped: {$result['skipped']}, Total Amount: " . number_format($result['total_amount'], 2)
+                )
                 ->with('import_result', $result);
         } catch (\Exception $e) {
             return redirect()

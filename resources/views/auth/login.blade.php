@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container py-5" style="min-height: 80vh;">
-    <div class="row justify-content-center align-items-center h-100">
+    <div class="row justify-content-center align-items-center">
         <div class="col-md-6 col-lg-5">
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="card-header bg-primary text-white text-center rounded-top-4 py-3">
@@ -14,26 +14,44 @@
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
 
+                        <!-- Email -->
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ __('Email Address') }}</label>
+                            <label for="email" class="form-label">
+                                {{ __('Email Address') }}
+                            </label>
 
                             <div class="input-group">
                                 <span class="input-group-text bg-light">
                                     <i class="bi bi-envelope"></i>
                                 </span>
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus placeholder="you@example.com">
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <div class="flex-grow-1">
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        class="form-control @error('email') is-invalid @enderror"
+                                        name="email"
+                                        value="{{ old('email') }}"
+                                        required
+                                        autocomplete="email"
+                                        autofocus
+                                        placeholder="you@example.com"
+                                    >
+
+                                    @error('email')
+                                        <div class="invalid-feedback d-block">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Password -->
                         <div class="mb-3">
                             <label for="password" class="form-label d-flex justify-content-between">
                                 <span>{{ __('Password') }}</span>
+
                                 @if (Route::has('password.request'))
                                     <a href="{{ route('password.request') }}" class="small text-decoration-none">
                                         {{ __('Forgot password?') }}
@@ -45,31 +63,60 @@
                                 <span class="input-group-text bg-light">
                                     <i class="bi bi-lock"></i>
                                 </span>
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password" placeholder="••••••••">
 
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <div class="position-relative flex-grow-1">
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        class="form-control pe-5 @error('password') is-invalid @enderror"
+                                        name="password"
+                                        required
+                                        autocomplete="current-password"
+                                    >
+
+                                    <button
+                                        type="button"
+                                        id="togglePassword"
+                                        class="btn btn-link position-absolute top-50 end-0 translate-middle-y text-decoration-none pe-3"
+                                        style="z-index:10;"
+                                    >
+                                        Show
+                                    </button>
+
+                                    @error('password')
+                                        <div class="invalid-feedback d-block">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Remember Me -->
                         <div class="mb-4 d-flex justify-content-between align-items-center">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="remember"
+                                    id="remember"
+                                    {{ old('remember') ? 'checked' : '' }}
+                                >
+
                                 <label class="form-check-label" for="remember">
                                     {{ __('Remember Me') }}
                                 </label>
                             </div>
                         </div>
 
+                        <!-- Login Button -->
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 {{ __('Login') }}
                             </button>
                         </div>
                     </form>
+
                 </div>
             </div>
             <p class="text-center text-muted mt-3 small mb-0">
@@ -78,4 +125,23 @@
         </div>
     </div>
 </div>
+
 @endsection
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+
+    if (togglePassword && password) {
+        togglePassword.addEventListener('click', function () {
+            if (password.type === 'password') {
+                password.type = 'text';
+                this.textContent = 'Hide';
+            } else {
+                password.type = 'password';
+                this.textContent = 'Show';
+            }
+        });
+    }
+});
+</script>

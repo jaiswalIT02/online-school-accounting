@@ -35,7 +35,7 @@ class FundImportService
             'fund_date' => 'fund_date',
             'transaction date' => 'fund_date',
             'transactiondate' => 'fund_date',
-            
+
             // Component Name variations
             'component name' => 'component_name',
             'componentname' => 'component_name',
@@ -46,7 +46,7 @@ class FundImportService
             'articlename' => 'component_name',
             'article_name' => 'component_name',
             'name' => 'component_name',
-            
+
             // Component Code variations
             'component code' => 'component_code',
             'componentcode' => 'component_code',
@@ -56,14 +56,14 @@ class FundImportService
             'article code' => 'component_code',
             'articlecode' => 'component_code',
             'article_code' => 'component_code',
-            
+
             // Amount variations
             'amount' => 'amount',
             'total' => 'amount',
             'value' => 'amount',
             'fund amount' => 'amount',
             'fundamount' => 'amount',
-            
+
             // Remark variations
             'remark' => 'remark',
             'remarks' => 'remark',
@@ -83,11 +83,11 @@ class FundImportService
         if (empty($columnName)) {
             return '';
         }
-        
+
         // Convert to lowercase and remove special characters
         $normalized = strtolower(trim((string)$columnName));
         $normalized = preg_replace('/[^a-z0-9]/', '', $normalized);
-        
+
         return $normalized;
     }
 
@@ -125,7 +125,7 @@ class FundImportService
                     }
                 }
             }
-            
+
             if ($isHeaderRow) {
                 $headers = array_map('trim', array_map('strval', $firstRow));
                 $rows = array_slice($rows, 1);
@@ -137,6 +137,7 @@ class FundImportService
         $fillableColumns = $this->getFillableColumns();
 
         DB::beginTransaction();
+        $totalAmount = 0;
         try {
             foreach ($rows as $rowIndex => $row) {
                 $rowNumber = $rowIndex + 2; // +2 because Excel rows start at 1 and we skip header
@@ -159,19 +160,19 @@ class FundImportService
 
                 // Map all columns from Excel to database columns
                 $mappedData = [];
-                
+
                 foreach ($associativeRow as $excelColumn => $value) {
                     if ($value === null || $value === '') {
                         continue;
                     }
-                    
+
                     // Normalize Excel column name
                     $normalizedExcelColumn = $this->normalizeColumnName($excelColumn);
-                    
+
                     // Check if this column maps to a database column
                     if (isset($columnMapping[$normalizedExcelColumn])) {
                         $dbColumn = $columnMapping[$normalizedExcelColumn];
-                        
+
                         // Only include if it's a fillable column
                         if (in_array($dbColumn, $fillableColumns)) {
                             $mappedData[$dbColumn] = trim((string)$value);
@@ -198,6 +199,7 @@ class FundImportService
                     continue;
                 }
 
+                $totalAmount += $preparedData['amount'] ?? 0;
                 // Insert into database
                 try {
                     Fund::create($preparedData);
@@ -215,9 +217,10 @@ class FundImportService
             DB::commit();
 
             return [
-                'total_rows' => $this->totalRows,
-                'inserted' => $this->insertedCount,
-                'skipped' => $this->skippedCount,
+                'total_rows'   => $this->totalRows,
+                'inserted'     => $this->insertedCount,
+                'skipped'      => $this->skippedCount,
+                'total_amount' => $totalAmount,
                 'skipped_rows' => $this->skippedRows,
             ];
         } catch (\Exception $e) {
@@ -242,7 +245,7 @@ class FundImportService
                     // If it's already in dd/mm/yyyy format, use as is
                     if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dateValue)) {
                         $prepared['fund_date'] = $dateValue;
-                    } 
+                    }
                     // Try to parse other formats and convert to dd/mm/yyyy
                     else {
                         // Try dd-mm-yyyy

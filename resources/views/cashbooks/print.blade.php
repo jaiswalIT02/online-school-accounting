@@ -794,7 +794,7 @@
                     </table>
                 </div>
             </div>
-            <div>Page {{ $currentPageNumber}}  <span style="float: right;">Printed On :{{ date('d/m/Y h:i A') }}</span></div>
+            <div>Page {{ $currentPageNumber}}  <span style="float: right;"> {{ date('d/m/Y h:i A') }}</span></div>
         </div>
     @endfor
     

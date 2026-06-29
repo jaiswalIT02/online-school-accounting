@@ -41,10 +41,37 @@
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    <button class="btn btn-primary" type="submit">Save Ledger</button>
+                    <button class="btn btn-primary" type="submit">Save Account</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 @endsection
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const nameInput = document.getElementById('name');
+    const slugInput = document.getElementById('slug');
+
+    if (!nameInput || !slugInput) return;
+
+    let slugEdited = false;
+
+    slugInput.addEventListener('input', function () {
+        slugEdited = true;
+    });
+
+    nameInput.addEventListener('input', function () {
+        if (slugEdited) return;
+
+        slugInput.value = this.value
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    });
+
+});
+</script>

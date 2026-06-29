@@ -230,7 +230,7 @@
     @php
     $pageNumber = $index+1;
     @endphp
-    <div>Page {{ $pageNumber }}  <span style="float: right;">Printed On :{{ date('d/m/Y h:i A') }}</span></div>
+    <div>Page {{ $pageNumber }}  <span style="float: right;"> {{ date('d/m/Y h:i A') }}</span></div>
     <div class="ledger-header">
         <div class="ledger-title">
             <span class="label">LEDGER A/C. of</span>

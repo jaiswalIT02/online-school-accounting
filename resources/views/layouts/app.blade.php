@@ -8,7 +8,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ Auth::user()->school->name ?? 'Online Accounting Service' }}</title>
+    <title>{{ strtoupper(Auth::user()?->school?->slug) ?? 'Online Accounting Service' }}</title>
     <!-- <title>{{ config('app.name', 'KGBVDKJ') }}</title> -->
 
     <!-- Fonts -->
@@ -32,7 +32,7 @@
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    {{ Auth::user()->school->name ?? 'Online A/C Service' }}
+                    {{ strtoupper(Auth::user()?->school?->slug ?? 'Online A/C Service') }}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                     <span class="navbar-toggler-icon"></span>
