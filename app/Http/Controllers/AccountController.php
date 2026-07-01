@@ -180,7 +180,19 @@ class AccountController extends Controller
         $rpAccounts = ReceiptPaymentAccount::where('account_id', $id)
             ->where('session_year_id', $sessionFilter)
             ->where('account_type_id', $accountType)
-            ->orderBy('id', 'asc')
+            ->orderByRaw("
+        CASE
+            -- Quarterly (3 months)
+            WHEN TIMESTAMPDIFF(MONTH, period_from, period_to) BETWEEN 2 AND 3 THEN 1
+
+            -- Half-Yearly (6 months)
+            WHEN TIMESTAMPDIFF(MONTH, period_from, period_to) BETWEEN 5 AND 6 THEN 2
+
+            -- Yearly (12 months or more)
+            ELSE 3
+        END
+    ")
+            ->orderBy('period_from')
             ->get();
         return view('accounts.show', compact('rpAccounts'));
     }

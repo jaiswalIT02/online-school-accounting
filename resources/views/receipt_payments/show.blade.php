@@ -14,7 +14,8 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary" href="{{ route('receipt_payments.index') }}">Back</a>
+            {{-- <a class="btn btn-outline-secondary" href="{{ route('receipt_payments.index') }}">Back</a> --}}
+            <a class="btn btn-outline-secondary" href="{{ route('accounts.show',['id' => $account->account_id]) }}">Back</a>
             <a class="btn btn-outline-secondary" href="{{ route('receipt_payments.edit', $account) }}">Edit</a>
             <a class="btn btn-success" href="{{ route('receipt_payments.print', $account) }}" target="_blank">
                 <i class="bi bi-printer"></i> Print
